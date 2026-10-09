@@ -17,6 +17,7 @@ class AdminCampaignBloc extends Bloc<AdminCampaignEvent, AdminCampaignState> {
     on<AdminCampaignUpdateSubmitted>(_onUpdateSubmitted);
     on<AdminVoucherCreateSubmitted>(_onVoucherSubmitted);
     on<AdminCampaignSubmitReset>(_onSubmitReset);
+    on<AdminMitraProductsLoaded>(_onProductsLoaded);
   }
 
   final DonationRepository _repository;
@@ -236,6 +237,29 @@ class AdminCampaignBloc extends Bloc<AdminCampaignEvent, AdminCampaignState> {
         clearSubmit: true,
       ),
     );
+  }
+
+  Future<void> _onProductsLoaded(
+    AdminMitraProductsLoaded event,
+    Emitter<AdminCampaignState> emit,
+  ) async {
+    emit(state.copyWith(productsLoading: true));
+    try {
+      final products = await _repository.getAdminMitraProducts(
+        mitraProfileId: event.mitraProfileId,
+      );
+      emit(state.copyWith(products: products, productsLoading: false));
+    } on VoucherException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        emit(
+          state.copyWith(productsLoading: false, isUnauthorized: true),
+        );
+        return;
+      }
+      emit(state.copyWith(productsLoading: false));
+    } catch (_) {
+      emit(state.copyWith(productsLoading: false));
+    }
   }
 
   /// Pesan buat-voucher ramah admin.

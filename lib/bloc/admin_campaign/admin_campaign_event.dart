@@ -34,3 +34,10 @@ class AdminVoucherCreateSubmitted extends AdminCampaignEvent {
 class AdminCampaignSubmitReset extends AdminCampaignEvent {
   const AdminCampaignSubmitReset();
 }
+
+/// Muat produk mitra untuk picker funding (opsional filter mitra).
+class AdminMitraProductsLoaded extends AdminCampaignEvent {
+  const AdminMitraProductsLoaded({this.mitraProfileId});
+
+  final int? mitraProfileId;
+}

@@ -90,6 +90,10 @@ class _DompetVoucherScreenState extends State<DompetVoucherScreen> {
     }
   }
 
+  /// Kota efektif klaim (field city, fallback '-').
+  String _claimCity(MyVoucherClaim claim) =>
+      claim.city.trim().isNotEmpty ? claim.city.trim() : '-';
+
   /// Adaptasi klaim asli ke map kartu tiket yang sudah ada.
   Map<String, dynamic> _claimToCard(MyVoucherClaim claim) {
     const palette = [
@@ -103,6 +107,8 @@ class _DompetVoucherScreenState extends State<DompetVoucherScreen> {
         : claim.storeName.trim().split(RegExp(r'\s+'));
     return {
       'storeName': claim.storeName.isEmpty ? claim.ownerName : claim.storeName,
+      'city': _claimCity(claim),
+      'address': claim.addressLabel,
       'discount': _formatRupiah(claim.rupiahValue),
       'expiry': _formatExpiry(claim.expiredAt),
       'leftColor': palette[claim.claimId % palette.length],
@@ -578,6 +584,31 @@ class _DompetVoucherScreenState extends State<DompetVoucherScreen> {
                           Row(
                             children: [
                               const Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color: Color(0xFF9AA3A0),
+                              ),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  (voucher['address'] as String? ?? '').isNotEmpty
+                                      ? '${voucher['city']} • ${voucher['address']}'
+                                      : '${voucher['city']}',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    height: 1.2,
+                                    color: Color(0xFF8A938F),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
                                 Icons.calendar_today,
                                 size: 12,
                                 color: Color(0xFF9AA3A0),
@@ -633,8 +664,12 @@ class _DompetVoucherScreenState extends State<DompetVoucherScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _RedeemSheet(storeName: storeName, token: claim.qrToken),
+      builder: (context) => _RedeemSheet(
+        storeName: storeName,
+        token: claim.qrToken,
+        city: _claimCity(claim),
+        address: claim.addressLabel,
+      ),
     );
   }
 
@@ -789,8 +824,15 @@ class _SerratedLeftClipper extends CustomClipper<Path> {
 class _RedeemSheet extends StatefulWidget {
   final String storeName;
   final String token;
+  final String city;
+  final String address;
 
-  const _RedeemSheet({required this.storeName, required this.token});
+  const _RedeemSheet({
+    required this.storeName,
+    required this.token,
+    this.city = '',
+    this.address = '',
+  });
 
   @override
   State<_RedeemSheet> createState() => _RedeemSheetState();
@@ -941,6 +983,54 @@ class _RedeemSheetState extends State<_RedeemSheet> {
             ),
           ),
           const SizedBox(height: 14),
+          if (widget.city.trim().isNotEmpty ||
+              widget.address.trim().isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F3F1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: Color(0xFF2E9E4B),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.storeName,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111111)),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.address.trim().isNotEmpty
+                              ? '${widget.city} • ${widget.address}'
+                              : widget.city,
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF5B6660)),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (widget.city.trim().isNotEmpty ||
+              widget.address.trim().isNotEmpty)
+            const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(

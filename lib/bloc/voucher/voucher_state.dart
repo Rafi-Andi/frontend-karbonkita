@@ -1,5 +1,6 @@
 import '../../models/my_voucher.dart';
 import '../../models/voucher.dart';
+import '../../models/voucher_city.dart';
 
 /// Status muat marketplace.
 enum VoucherStatus { initial, loading, loaded, error }
@@ -15,6 +16,8 @@ class VoucherState {
     this.status = VoucherStatus.initial,
     this.vouchers = const [],
     this.selectedCategory,
+    this.selectedCity,
+    this.cities = const [],
     this.ecoPoints,
     this.errorMessage,
     this.inventoryStatus = InventoryStatus.initial,
@@ -35,6 +38,12 @@ class VoucherState {
   /// Kategori aktif di marketplace, null = Semua.
   /// Dipakai agar pull-to-refresh / retry memuat kategori yang sama.
   final String? selectedCategory;
+
+  /// Kota aktif di marketplace, null = Semua kota.
+  final String? selectedCity;
+
+  /// Opsi filter kota (hanya kota yang ada voucher).
+  final List<VoucherCity> cities;
   final int? ecoPoints;
   final String? errorMessage;
 
@@ -61,6 +70,8 @@ class VoucherState {
     VoucherStatus? status,
     List<Voucher>? vouchers,
     Object? selectedCategory = _noChange,
+    Object? selectedCity = _noChange,
+    List<VoucherCity>? cities,
     int? ecoPoints,
     String? errorMessage,
     InventoryStatus? inventoryStatus,
@@ -81,6 +92,10 @@ class VoucherState {
       selectedCategory: selectedCategory == _noChange
           ? this.selectedCategory
           : selectedCategory as String?,
+      selectedCity: selectedCity == _noChange
+          ? this.selectedCity
+          : selectedCity as String?,
+      cities: cities ?? this.cities,
       ecoPoints: ecoPoints ?? this.ecoPoints,
       errorMessage: errorMessage,
       inventoryStatus: inventoryStatus ?? this.inventoryStatus,

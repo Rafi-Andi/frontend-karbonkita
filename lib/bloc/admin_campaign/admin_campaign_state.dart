@@ -1,4 +1,5 @@
 import '../../models/donation.dart';
+import '../../models/mitra_product.dart';
 
 /// Status muat daftar campaign admin.
 enum AdminCampaignStatus { initial, loading, loaded, error }
@@ -16,6 +17,8 @@ class AdminCampaignState {
     this.lastVoucher,
     this.submitErrorMessage,
     this.isUnauthorized = false,
+    this.products = const [],
+    this.productsLoading = false,
   });
 
   final AdminCampaignStatus status;
@@ -34,6 +37,10 @@ class AdminCampaignState {
   /// True bila backend 401/403 — UI harus logout / tolak akses.
   final bool isUnauthorized;
 
+  /// Produk untuk picker funding (hanya fundable yang bisa dipilih).
+  final List<MitraProduct> products;
+  final bool productsLoading;
+
   AdminCampaignState copyWith({
     AdminCampaignStatus? status,
     List<DonationCampaign>? campaigns,
@@ -44,6 +51,8 @@ class AdminCampaignState {
     bool clearSubmit = false,
     String? submitErrorMessage,
     bool? isUnauthorized,
+    List<MitraProduct>? products,
+    bool? productsLoading,
   }) {
     return AdminCampaignState(
       status: status ?? this.status,
@@ -54,6 +63,8 @@ class AdminCampaignState {
       lastVoucher: clearSubmit ? null : (lastVoucher ?? this.lastVoucher),
       submitErrorMessage: clearSubmit ? null : submitErrorMessage,
       isUnauthorized: isUnauthorized ?? this.isUnauthorized,
+      products: products ?? this.products,
+      productsLoading: productsLoading ?? this.productsLoading,
     );
   }
 }

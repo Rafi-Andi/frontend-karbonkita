@@ -14,6 +14,7 @@ import 'bloc/leaderboard/leaderboard_bloc.dart';
 import 'bloc/level/level_bloc.dart';
 import 'bloc/mission/mission_bloc.dart';
 import 'bloc/merchant/merchant_bloc.dart';
+import 'bloc/merchant_product/merchant_product_bloc.dart';
 import 'bloc/quiz/quiz_bloc.dart';
 import 'bloc/voucher/voucher_bloc.dart';
 import 'core/network/connectivity_service.dart';
@@ -86,13 +87,13 @@ Future<void> main() async {
   );
   final levelBloc = LevelBloc(profileRepository);
   final activityBloc = ActivityBloc(profileRepository);
-  final merchantBloc = MerchantBloc(
-    MerchantRepository(
-      MerchantRemoteDatasource(dioClient),
-      cache: cache,
-      storage: storage,
-    ),
+  final merchantRepository = MerchantRepository(
+    MerchantRemoteDatasource(dioClient),
+    cache: cache,
+    storage: storage,
   );
+  final merchantBloc = MerchantBloc(merchantRepository);
+  final merchantProductBloc = MerchantProductBloc(merchantRepository);
   final adminMerchantBloc = AdminMerchantBloc(
     AdminMerchantRepository(AdminMerchantRemoteDatasource(dioClient)),
   );
@@ -116,6 +117,7 @@ Future<void> main() async {
       levelBloc: levelBloc,
       activityBloc: activityBloc,
       merchantBloc: merchantBloc,
+      merchantProductBloc: merchantProductBloc,
       adminMerchantBloc: adminMerchantBloc,
       donationBloc: donationBloc,
       adminCampaignBloc: adminCampaignBloc,
@@ -137,6 +139,7 @@ class MyApp extends StatelessWidget {
     required this.levelBloc,
     required this.activityBloc,
     required this.merchantBloc,
+    required this.merchantProductBloc,
     required this.adminMerchantBloc,
     required this.donationBloc,
     required this.adminCampaignBloc,
@@ -153,6 +156,7 @@ class MyApp extends StatelessWidget {
   final LevelBloc levelBloc;
   final ActivityBloc activityBloc;
   final MerchantBloc merchantBloc;
+  final MerchantProductBloc merchantProductBloc;
   final AdminMerchantBloc adminMerchantBloc;
   final DonationBloc donationBloc;
   final AdminCampaignBloc adminCampaignBloc;
@@ -172,6 +176,7 @@ class MyApp extends StatelessWidget {
         BlocProvider.value(value: levelBloc),
         BlocProvider.value(value: activityBloc),
         BlocProvider.value(value: merchantBloc),
+        BlocProvider.value(value: merchantProductBloc),
         BlocProvider.value(value: adminMerchantBloc),
         BlocProvider.value(value: donationBloc),
         BlocProvider.value(value: adminCampaignBloc),

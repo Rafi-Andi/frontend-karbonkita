@@ -3,6 +3,7 @@ import '../../core/network/dio_client.dart';
 import '../../models/dashboard.dart';
 import '../../models/my_voucher.dart';
 import '../../models/voucher.dart';
+import '../../models/voucher_city.dart';
 
 /// Akses mentah ke endpoint voucher & dashboard backend.
 class VoucherRemoteDatasource {
@@ -10,11 +11,11 @@ class VoucherRemoteDatasource {
 
   final DioClient _client;
 
-  /// GET /api/vouchers[?category=...]
+  /// GET /api/vouchers[?category=...&city=...]
   /// Return list voucher aktif, stok tersedia, belum kedaluwarsa.
-  Future<List<Voucher>> fetchVouchers({String? category}) async {
+  Future<List<Voucher>> fetchVouchers({String? category, String? city}) async {
     final envelope = await _client.get(
-      ApiEndpoints.vouchersQuery(category: category),
+      ApiEndpoints.vouchersQuery(category: category, city: city),
     );
     final data = envelope['data'];
     if (data is List) {
@@ -24,6 +25,19 @@ class VoucherRemoteDatasource {
           .toList();
     }
     throw const FormatException('Format daftar voucher tidak dikenali.');
+  }
+
+  /// GET /api/vouchers/cities — kota yang punya voucher aktif.
+  Future<List<VoucherCity>> fetchVoucherCities() async {
+    final envelope = await _client.get(ApiEndpoints.voucherCities);
+    final data = envelope['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(VoucherCity.fromJson)
+          .toList();
+    }
+    throw const FormatException('Format daftar kota tidak dikenali.');
   }
 
   /// GET /api/user/dashboard

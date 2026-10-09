@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
+import '../../bloc/dashboard/dashboard_bloc.dart';
 import '../../bloc/voucher/voucher_bloc.dart';
 import '../../bloc/voucher/voucher_event.dart';
 import '../../bloc/voucher/voucher_state.dart';
@@ -22,6 +23,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   void initState() {
     super.initState();
     context.read<VoucherBloc>().add(const VouchersLoaded());
+    context.read<VoucherBloc>().add(const VoucherCitiesLoaded());
   }
 
   /// Format angka ala Indonesia: 1250 -> "1.250".
@@ -80,6 +82,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 _buildPointsAndWalletRow(),
                 const SizedBox(height: 20),
                 _buildCategoryChips(),
+                const SizedBox(height: 12),
+                _buildCityFilter(),
                 const SizedBox(height: 20),
                 _buildBanner(),
                 const SizedBox(height: 25),
@@ -92,6 +96,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
       ),
     );
+  }
+
+  void _reloadWith(String? category, String? city) {
+    context.read<VoucherBloc>().add(VouchersLoaded(category: category, city: city));
   }
 
   void _onClaimTap(Voucher voucher) {
@@ -112,10 +120,33 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Tukar Voucher?'),
-        content: Text(
-          '${voucher.title}\n'
-          'Biaya: ${_formatPoints(voucher.pointsCost)} poin'
-          '${ecoPoints == null ? '' : '\nSisa: ${_formatPoints(ecoPoints - voucher.pointsCost)} poin'}',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(voucher.title),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    voucher.mitra.address.fullLabel,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Biaya: ${_formatPoints(voucher.pointsCost)} poin'
+              '${ecoPoints == null ? '' : '\nSisa: ${_formatPoints(ecoPoints - voucher.pointsCost)} poin'}',
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -339,10 +370,86 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
+  /// Filter kota: Semua + Lokasi saya (kota profil) + kota yg ada voucher.
+  /// Opsi kota dari backend distinct agar selalu ada hasilnya.
+  Widget _buildCityFilter() {
+    return BlocBuilder<VoucherBloc, VoucherState>(
+      buildWhen: (prev, curr) =>
+          prev.selectedCity != curr.selectedCity ||
+          prev.cities != curr.cities ||
+          prev.status != curr.status,
+      builder: (context, state) {
+        final myCity = context
+            .read<DashboardBloc>()
+            .state
+            .dashboard
+            ?.user
+            .kota
+            .trim();
+        final items = <DropdownMenuItem<String?>>[
+          const DropdownMenuItem(value: null, child: Text('Semua kota')),
+        ];
+        if (myCity != null && myCity.isNotEmpty) {
+          items.add(
+            DropdownMenuItem(
+              value: myCity,
+              child: Text('Lokasi saya ($myCity)'),
+            ),
+          );
+        }
+        for (final c in state.cities) {
+          if (c.city.isEmpty) continue;
+          if (c.city == myCity) continue;
+          items.add(
+            DropdownMenuItem(
+              value: c.city,
+              child: Text('${c.city} (${c.voucherCount})'),
+            ),
+          );
+        }
+        final valid = state.selectedCity == null ||
+            items.any((e) => e.value == state.selectedCity);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on_outlined,
+                  size: 16, color: Colors.green),
+              const SizedBox(width: 6),
+              Expanded(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: valid ? state.selectedCity : null,
+                    isExpanded: true,
+                    hint: const Text('Pilih kota',
+                        style: TextStyle(fontSize: 12)),
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.black87),
+                    items: items,
+                    onChanged: (v) => _reloadWith(
+                      context.read<VoucherBloc>().state.selectedCategory,
+                      v,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCategoryChips() {
     return BlocBuilder<VoucherBloc, VoucherState>(
       buildWhen: (prev, curr) =>
           prev.selectedCategory != curr.selectedCategory ||
+          prev.selectedCity != curr.selectedCity ||
           prev.status != curr.status,
       builder: (context, state) {
         final loadingCategory = state.status == VoucherStatus.loading
@@ -363,8 +470,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   onTap: isSelected
                       ? null
                       : () {
-                          context.read<VoucherBloc>().add(
-                            VouchersLoaded(category: category.value),
+                          _reloadWith(
+                            category.value,
+                            context
+                                .read<VoucherBloc>()
+                                .state
+                                .selectedCity,
                           );
                         },
                   child: Container(
@@ -480,6 +591,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           prev.status != curr.status ||
           prev.vouchers != curr.vouchers ||
           prev.selectedCategory != curr.selectedCategory ||
+          prev.selectedCity != curr.selectedCity ||
           prev.claimStatus != curr.claimStatus ||
           prev.claimingVoucherId != curr.claimingVoucherId ||
           prev.ecoPoints != curr.ecoPoints,
@@ -501,7 +613,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         }
 
         if (state.vouchers.isEmpty) {
-          return _buildEmptyState(state.selectedCategory);
+          return _buildEmptyState(
+            state.selectedCategory,
+            selectedCity: state.selectedCity,
+          );
         }
 
         return GridView.count(
@@ -547,13 +662,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              final category = context
-                  .read<VoucherBloc>()
-                  .state
-                  .selectedCategory;
-              context.read<VoucherBloc>().add(
-                VouchersLoaded(category: category),
-              );
+              final s = context.read<VoucherBloc>().state;
+              _reloadWith(s.selectedCategory, s.selectedCity);
             },
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('Coba Lagi'),
@@ -570,7 +680,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildEmptyState(String? category) {
+  Widget _buildEmptyState(String? category, {String? selectedCity}) {
     String? label;
     if (category != null) {
       for (final c in VoucherCategory.values) {
@@ -580,6 +690,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         }
       }
     }
+    final citySuffix =
+        (selectedCity != null && selectedCity.isNotEmpty) ? ' di $selectedCity' : '';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -601,8 +713,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           const SizedBox(height: 12),
           Text(
             label == null
-                ? 'Belum ada voucher tersedia'
-                : 'Belum ada voucher $label',
+                ? 'Belum ada voucher tersedia$citySuffix'
+                : 'Belum ada voucher $label$citySuffix',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
@@ -613,6 +725,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   Widget _buildProductCard(Voucher voucher) {
     final storeName = voucher.mitra.displayName;
+    final city = voucher.mitra.displayCity.trim();
+    final area = [
+      voucher.mitra.address.kecamatan,
+      voucher.mitra.address.kelurahan,
+    ].where((e) => e.trim().isNotEmpty).join(', ');
+    // Sembunyikan baris lokasi bila backend belum kirim kota samasekali.
+    final hasLocation = city.isNotEmpty && city != '-';
 
     return Container(
       decoration: BoxDecoration(
@@ -741,6 +860,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (hasLocation)
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined,
+                            size: 12, color: Colors.grey),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            area.isEmpty ? city : '$city • $area',
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.black54),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   BlocBuilder<VoucherBloc, VoucherState>(
                     buildWhen: (prev, curr) =>
                         prev.claimStatus != curr.claimStatus ||

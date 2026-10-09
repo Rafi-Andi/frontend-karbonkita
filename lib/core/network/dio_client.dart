@@ -85,6 +85,18 @@ class DioClient {
     }
   }
 
+  /// DELETE helper (mis. hapus produk mitra).
+  Future<Map<String, dynamic>> delete(String path) async {
+    try {
+      final res = await _dio.delete(path);
+      final data = res.data;
+      if (data is Map<String, dynamic>) return data;
+      return <String, dynamic>{'data': data};
+    } on DioException catch (e) {
+      throw _map(e);
+    }
+  }
+
   /// POST multipart untuk upload file (mis. verifikasi sampah).
   ///
   /// [fields] dikirim sebagai form fields, [filePath] sebagai single file

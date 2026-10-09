@@ -4,11 +4,17 @@ sealed class VoucherEvent {
 }
 
 /// Muat daftar voucher + saldo eco_points dari backend.
-/// [category] null = semua kategori.
+/// [category] null = semua kategori, [city] null = semua kota.
 class VouchersLoaded extends VoucherEvent {
-  const VouchersLoaded({this.category});
+  const VouchersLoaded({this.category, this.city});
 
   final String? category;
+  final String? city;
+}
+
+/// Muat daftar kota yang punya voucher aktif (opsi filter).
+class VoucherCitiesLoaded extends VoucherEvent {
+  const VoucherCitiesLoaded();
 }
 
 /// Muat inventaris dompet (active/used/expired) dari backend.

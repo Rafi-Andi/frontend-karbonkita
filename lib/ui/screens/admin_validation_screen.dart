@@ -12,6 +12,7 @@ import '../../models/merchant_application.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import 'add_voucher_catalog_screen.dart';
 import 'campaign_manage_screen.dart';
+import 'mission_manage_screen.dart';
 
 /// Validasi Mitra UMKM — antrean pengajuan terintegrasi API.
 ///
@@ -173,6 +174,36 @@ class _AdminValidationScreenState extends State<AdminValidationScreen> {
                         icon: const Icon(Icons.volunteer_activism, size: 16),
                         label: const Text(
                           'Kelola Campaign Donasi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _green,
+                          side: const BorderSide(color: _green),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MissionManageScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.assignment, size: 16),
+                        label: const Text(
+                          'Kelola Misi Mobilitas & Sampah',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

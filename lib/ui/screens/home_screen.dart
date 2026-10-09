@@ -15,6 +15,7 @@ import 'leaderboard_screen.dart';
 import 'profile_screen.dart';
 import 'quiz_level_screen.dart';
 import 'carbon_calculator_screen.dart';
+import 'mission_detail_screen.dart';
 import '../widgets/draggable_quiz_fab.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -659,19 +660,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () => _onItemTapped(1),
+                behavior: HitTestBehavior.opaque,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Lihat Semua',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.green, size: 16),
-                ],
+                    Icon(Icons.chevron_right, color: Colors.green, size: 16),
+                  ],
+                ),
               ),
             ],
           ),
@@ -691,19 +696,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   for (var i = 0; i < missions.length; i++) ...[
                     if (i > 0) const SizedBox(width: 15),
-                    _buildMisiCard(
-                      icon: missions[i].categoryIcon,
-                      title: missions[i].title,
-                      subtitle: missions[i].categoryLabel,
-                      points: '+${missions[i].pointsReward} Poin',
-                      xp: '+${missions[i].xpReward} XP',
-                      buttonText: missions[i].category == 'mobility'
-                          ? 'Mulai Tracker'
-                          : 'Selesaikan Misi',
-                      buttonColor: missions[i].category == 'waste'
-                          ? Colors.orangeAccent
-                          : Colors.green,
-                    ),
+                    _buildMisiCard(context, missions[i]),
                   ],
                 ],
               ),
@@ -713,88 +706,96 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMisiCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String points,
-    required String xp,
-    required String buttonText,
-    required Color buttonColor,
-  }) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 40, color: Colors.green),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 10, color: Colors.black54),
-          ),
-          const SizedBox(height: 10),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.eco, color: Colors.green, size: 12),
-                const SizedBox(width: 2),
-                Text(
-                  points,
+  void _openMissionDetail(BuildContext context, Mission mission) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MissionDetailScreen(mission: mission)),
+    );
+  }
+
+  Widget _buildMisiCard(BuildContext context, Mission mission) {
+    final buttonText = mission.category == 'mobility'
+        ? 'Mulai Tracker'
+        : 'Selesaikan Misi';
+    final buttonColor = mission.category == 'waste'
+        ? Colors.orangeAccent
+        : Colors.green;
+    return InkWell(
+      onTap: () => _openMissionDetail(context, mission),
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            Icon(mission.categoryIcon, size: 40, color: Colors.green),
+            const SizedBox(height: 10),
+            Text(
+              mission.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              mission.categoryLabel,
+              style: const TextStyle(fontSize: 10, color: Colors.black54),
+            ),
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.eco, color: Colors.green, size: 12),
+                  const SizedBox(width: 2),
+                  Text(
+                    '+${mission.pointsReward} Poin',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(Icons.flash_on, color: Colors.lime, size: 12),
+                  Text(
+                    '+${mission.xpReward} XP',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _openMissionDetail(context, mission),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  buttonText,
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 5),
-                const Icon(Icons.flash_on, color: Colors.lime, size: 12),
-                Text(
-                  xp,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: buttonColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                buttonText,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -826,7 +827,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(child: _buildAksiButton(Icons.quiz, 'Kuis Harian')),
+              Expanded(
+                child: _buildAksiButton(
+                  Icons.quiz,
+                  'Kuis Harian',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const QuizLevelScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: _buildAksiButton(
@@ -980,19 +993,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () => _onItemTapped(3),
+                behavior: HitTestBehavior.opaque,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Lihat Semua',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.green, size: 16),
-                ],
+                    Icon(Icons.chevron_right, color: Colors.green, size: 16),
+                  ],
+                ),
               ),
             ],
           ),

@@ -5,7 +5,7 @@
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://mage.pemudasintaks.web.id/api',
+    defaultValue: 'http://localhost:8000/api',
   );
 
   // Auth
@@ -82,6 +82,12 @@ class ApiEndpoints {
 
   static String adminMerchantDetail(int id) => '$adminMerchants/$id';
   static String adminMerchantVerify(int id) => '$adminMerchants/$id/verify';
+
+  // Admin kelola misi mobility & waste (role:admin).
+  static const String adminMissions = '/admin/missions';
+
+  static String adminMission(int id) => '$adminMissions/$id';
+  static String adminMissionStatus(int id) => '$adminMissions/$id/status';
 
   static String leaderboardQuery({
     required String scope,

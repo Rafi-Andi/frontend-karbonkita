@@ -154,7 +154,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           children: [
                             const SizedBox(height: 16),
                             _buildHeader(),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 8),
+                            _buildWilayahBanner(board),
+                            const SizedBox(height: 12),
                             _buildTabToggle(),
                             const SizedBox(height: 16),
                             _buildCategoryToggle(),
@@ -187,6 +189,63 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
       ),
     );
+  }
+
+  /// Banner wilayah agar jelas leaderboard sudah dikelompokkan
+  /// per RT/RW user sendiri, bukan general se-Indonesia.
+  Widget _buildWilayahBanner(LeaderboardBoard? board) {
+    final wilayah = board?.wilayah;
+    // Fallback ke currentUser bila backend lama belum kirim `wilayah`.
+    final label = (wilayah != null && !wilayah.isEmpty)
+        ? wilayah.label
+        : (board?.currentUser != null
+              ? _wilayahLabelFromPreview(
+                  board!.currentUser!,
+                  scopeRt: _scope == LeaderboardScope.rt,
+                )
+              : null);
+    if (label == null || label.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF43A047).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on, color: Color(0xFF1B8039), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1B8039),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _wilayahLabelFromPreview(
+    LeaderboardPreview e, {
+    required bool scopeRt,
+  }) {
+    final rtRw = scopeRt ? 'RT ${e.rt}/RW ${e.rw}' : 'RW ${e.rw}';
+    final area = [
+      e.kelurahan,
+      e.kecamatan,
+      e.kota,
+    ].where((s) => s.isNotEmpty).join(', ');
+    if (area.isEmpty) return rtRw;
+    return '$rtRw • $area';
   }
 
   Widget _buildHeader() {

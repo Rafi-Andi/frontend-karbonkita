@@ -50,7 +50,7 @@ List<MissionStep> getMissionSteps({
           icon: Icons.speed_outlined,
           title: 'Jaga kecepatan wajar',
           subtitle:
-              'Aktivitas jalan/sepeda di bawah 30 km/jam agar tidak ditolak.',
+              'Jalan di bawah 7, lari di bawah 14, sepeda di bawah 25 km/jam agar tidak ditolak.',
         ),
         const MissionStep(
           icon: Icons.cloud_done_outlined,
@@ -121,7 +121,9 @@ List<String> getMissionTips(String category) {
 }
 
 /// Tebak mode tracker dari judul misi mobilitas.
-/// `cycling` bila menyebut sepeda, selain itu `walking`.
+/// Fallback bila API tidak mengirim `activity_type` (misi lama):
+/// `cycling` bila menyebut sepeda, `running` bila menyebut lari,
+/// selain itu `walking`.
 String activityTypeFromTitle(String title) {
   final lower = title.toLowerCase();
   if (lower.contains('sepeda') ||
@@ -129,6 +131,15 @@ String activityTypeFromTitle(String title) {
       lower.contains('pedal') ||
       lower.contains('kayuh')) {
     return 'cycling';
+  }
+  if (lower.contains('lari') ||
+      lower.contains('running') ||
+      lower.contains('run') ||
+      lower.contains('jogging') ||
+      lower.contains('joging') ||
+      lower.contains('marathon') ||
+      lower.contains('maraton')) {
+    return 'running';
   }
   return 'walking';
 }

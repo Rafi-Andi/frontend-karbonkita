@@ -22,7 +22,8 @@ Future<void> startMission(BuildContext context, Mission mission) async {
       MaterialPageRoute(
         builder: (_) => MobilityTrackerScreen(
           missionTitle: mission.title,
-          activityType: activityTypeFromTitle(mission.title),
+          activityType:
+              mission.activityType ?? activityTypeFromTitle(mission.title),
           missionId: mission.id,
           targetDistanceKm: mission.targetDistanceKm ?? 0.1,
         ),

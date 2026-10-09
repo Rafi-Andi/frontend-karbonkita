@@ -14,6 +14,19 @@ import '../../bloc/mission/mission_event.dart';
 import '../../bloc/mission/mission_state.dart';
 import '../widgets/mobility/mobility_stats_sheet.dart';
 
+/// Label Indonesia untuk tipe aktivitas mobilitas.
+/// Dipakai [MobilityTrackerScreen], [_ConfirmSheet], dan [_SuccessSheet].
+String activityTypeLabel(String activityType) {
+  switch (activityType) {
+    case 'walking':
+      return 'Jalan kaki';
+    case 'running':
+      return 'Lari';
+    default:
+      return 'Bersepeda';
+  }
+}
+
 /// Layar pelacakan Misi Mobilitas.
 ///
 /// Flow: user pilih misi di [MisiScreen] → mulai tracker ini →
@@ -67,12 +80,25 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
   static const int _minDurationSeconds = 60;
 
   /// Parameter simulator rute demo (penilaian indoor).
-  /// 14 m per 2 detik = 25,2 km/jam: lolos batas backend 30 km/jam.
+  /// Langkah per 2 detik disesuaikan batas backend per aktivitas
+  /// (walking 7 / running 14 / cycling 25 km/jam) agar selalu lolos:
+  /// jalan 2 m (3,6 km/jam), lari 5 m (9 km/jam), sepeda 12 m (21,6 km/jam).
   /// Simulator HANYA menginjeksi titik ke [_handleRawFix] — seluruh
   /// filter, timer, validasi, dan POST backend tetap berjalan normal.
-  static const double _simStepM = 14;
   static const double _simAccuracyM = 8;
   static const double _simBearingDeg = 45;
+
+  /// Langkah simulasi (meter per 2 detik) mengikuti aktivitas terkunci.
+  double get _simStepM {
+    switch (activityType) {
+      case 'walking':
+        return 2;
+      case 'running':
+        return 5;
+      default:
+        return 12;
+    }
+  }
 
   final MapController _mapController = MapController();
   final Distance _distance = const Distance();
@@ -109,7 +135,11 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    activityType = widget.activityType == 'walking' ? 'walking' : 'cycling';
+    activityType = switch (widget.activityType) {
+      'walking' => 'walking',
+      'running' => 'running',
+      _ => 'cycling',
+    };
     _initTracking();
   }
 
@@ -1218,9 +1248,7 @@ class _ConfirmSheet extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              activityType == 'cycling'
-                  ? 'Bersepeda (terkunci) • $pointCount titik GPS'
-                  : 'Jalan kaki (terkunci) • $pointCount titik GPS',
+              '${activityTypeLabel(activityType)} (terkunci) • $pointCount titik GPS',
               style: const TextStyle(fontSize: 12, color: Colors.black54),
             ),
             if (isSimulated) ...[
@@ -1387,7 +1415,7 @@ class _SuccessSheet extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '$missionTitle • ${activityType == 'cycling' ? 'Bersepeda' : 'Jalan kaki'}',
+              '$missionTitle • ${activityTypeLabel(activityType)}',
               style: const TextStyle(fontSize: 12, color: Colors.black54),
               textAlign: TextAlign.center,
             ),

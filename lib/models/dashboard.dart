@@ -122,12 +122,16 @@ class DashboardUser {
 }
 
 /// Satu baris preview leaderboard (RT/RW) di dashboard.
-/// Backend LeaderboardEntryResource: rank, user_id, name, rt, rw, xp, avatar, level.
+/// Backend LeaderboardEntryResource: rank, user_id, name,
+/// kota, kecamatan, kelurahan, rt, rw, xp, avatar, level.
 class LeaderboardPreview {
   const LeaderboardPreview({
     required this.rank,
     required this.userId,
     required this.name,
+    required this.kota,
+    required this.kecamatan,
+    required this.kelurahan,
     required this.rt,
     required this.rw,
     required this.xp,
@@ -138,6 +142,9 @@ class LeaderboardPreview {
   final int rank;
   final int userId;
   final String name;
+  final String kota;
+  final String kecamatan;
+  final String kelurahan;
   final String rt;
   final String rw;
   final int xp;
@@ -149,6 +156,9 @@ class LeaderboardPreview {
       rank: _toInt(json['rank']),
       userId: _toInt(json['user_id']),
       name: json['name'] as String? ?? '',
+      kota: json['kota'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
+      kelurahan: json['kelurahan'] as String? ?? '',
       rt: json['rt']?.toString() ?? '',
       rw: json['rw']?.toString() ?? '',
       // Preview dashboard pakai key `xp`; leaderboard full pakai `total_xp`
@@ -163,6 +173,9 @@ class LeaderboardPreview {
     'rank': rank,
     'user_id': userId,
     'name': name,
+    'kota': kota,
+    'kecamatan': kecamatan,
+    'kelurahan': kelurahan,
     'rt': rt,
     'rw': rw,
     'xp': xp,

@@ -5,6 +5,7 @@
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
+    // defaultValue: 'https://mage.pemudasintaks.web.id/api',
     defaultValue: 'http://localhost:8000/api',
   );
 

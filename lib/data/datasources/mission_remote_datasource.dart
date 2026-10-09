@@ -91,7 +91,7 @@ class MissionRemoteDatasource {
   /// Sinkronisasi data mobilitas (GPS, jarak, durasi).
   Future<Map<String, dynamic>> mobilitySync({
     int? missionId,
-    required String activityType, // 'cycling' | 'walking'
+    required String activityType, // 'cycling' | 'walking' | 'running'
     required double distanceKm,
     required int durationSeconds,
     required List<Map<String, double>> gpsCoordinatesPath,

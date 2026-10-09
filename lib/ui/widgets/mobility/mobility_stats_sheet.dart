@@ -29,7 +29,8 @@ class MobilityStatsSheet extends StatelessWidget {
   final double targetProgress;
   final String targetText;
   final String co2Text;
-  final String activityType; // 'cycling' | 'walking' — terkunci dari misi
+  final String
+  activityType; // 'cycling' | 'walking' | 'running' — terkunci dari misi
   final bool isPaused;
   final bool isSyncing;
   final VoidCallback onPauseResume;
@@ -40,7 +41,16 @@ class MobilityStatsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCycling = activityType == 'cycling';
+    final activityLabel = switch (activityType) {
+      'walking' => 'Jalan Kaki',
+      'running' => 'Lari',
+      _ => 'Bersepeda',
+    };
+    final activityIcon = switch (activityType) {
+      'walking' => Icons.directions_walk,
+      'running' => Icons.directions_run,
+      _ => Icons.pedal_bike,
+    };
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -83,13 +93,13 @@ class MobilityStatsSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isCycling ? Icons.pedal_bike : Icons.directions_walk,
+                      activityIcon,
                       size: 18,
                       color: const Color(0xFF1B8039),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isCycling ? 'Bersepeda' : 'Jalan Kaki',
+                      activityLabel,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -209,7 +219,7 @@ class MobilityStatsSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      isCycling ? 'Bersepeda' : 'Jalan Kaki',
+                      activityLabel,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

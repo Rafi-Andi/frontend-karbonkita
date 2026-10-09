@@ -43,6 +43,17 @@ const Map<String, String> kValidationFieldLabels = {
   'is_open': 'Status toko',
   'action': 'Aksi verifikasi',
   'reason': 'Alasan',
+  'title': 'Judul misi',
+  'description': 'Deskripsi misi',
+  'category': 'Kategori misi',
+  'xp_reward': 'XP reward',
+  'points_reward': 'Poin reward',
+  'icon': 'Ikon misi',
+  'activity_type': 'Aktivitas misi',
+  'target_distance_km': 'Target jarak',
+  'validation_prompt': 'Kriteria foto',
+  'is_active': 'Status misi',
+  'max_participants': 'Maksimal peserta',
 };
 
 /// Ubah pesan validasi mentah Laravel (Inggris) jadi Indonesia yang ramah.

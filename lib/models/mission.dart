@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// Mission model dari API response.
-/// Backend MissionResource: id, title, description, category, xp_reward,
-/// points_reward, target_distance_km (mobility saja, null = tanpa target),
-/// icon, is_completed_today (kunci harian 1x per misi).
+/// Backend MissionResource: id, title, description, category, activity_type
+/// (mobility saja: walking/running/cycling, null = misi lama),
+/// xp_reward, points_reward, target_distance_km (mobility saja,
+/// null = tanpa target), icon, is_completed_today (kunci harian 1x per misi).
 class Mission {
   const Mission({
     required this.id,
@@ -15,6 +16,8 @@ class Mission {
     required this.icon,
     this.isCompletedToday = false,
     this.targetDistanceKm,
+    this.activityType,
+    this.isActive = true,
   });
 
   final int id;
@@ -32,6 +35,14 @@ class Mission {
   /// Target jarak (KM) khusus misi mobilitas. Null = tanpa target.
   final double? targetDistanceKm;
 
+  /// Aktivitas pengikat misi mobilitas (walking/running/cycling).
+  /// Null untuk misi lama / non-mobilitas — pemanggil fallback ke
+  /// tebakan judul via [activityTypeFromTitle].
+  final String? activityType;
+
+  /// Status aktif dari backend. Default true agar cache lama tetap aman.
+  final bool isActive;
+
   factory Mission.fromJson(Map<String, dynamic> json) {
     return Mission(
       id: (json['id'] as num).toInt(),
@@ -43,6 +54,8 @@ class Mission {
       icon: json['icon'] as String? ?? '',
       isCompletedToday: json['is_completed_today'] as bool? ?? false,
       targetDistanceKm: (json['target_distance_km'] as num?)?.toDouble(),
+      activityType: json['activity_type'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 
@@ -56,6 +69,8 @@ class Mission {
     'icon': icon,
     'is_completed_today': isCompletedToday,
     'target_distance_km': targetDistanceKm,
+    'activity_type': activityType,
+    'is_active': isActive,
   };
 
   /// Helper untuk mapping category ke icon Flutter

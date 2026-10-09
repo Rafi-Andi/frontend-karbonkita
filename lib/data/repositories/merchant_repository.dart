@@ -1,9 +1,12 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../../core/network/auth_exception.dart';
 import '../../core/network/voucher_exception.dart';
 import '../../core/storage/cache_keys.dart';
 import '../../core/storage/cache_service.dart';
 import '../../core/storage/token_storage.dart';
 import '../../models/merchant_dashboard.dart';
+import '../../models/mitra_product.dart';
 import '../datasources/merchant_remote_datasource.dart';
 
 /// Orkestrasi data dashboard merchant + cache offline read-only.
@@ -127,6 +130,93 @@ class MerchantRepository {
       );
     } catch (e) {
       throw VoucherException('Gagal memuat riwayat pencairan: $e');
+    }
+  }
+
+  /// Produk milik toko sendiri (master harga fix untuk funding admin).
+  Future<List<MitraProduct>> getProducts() async {
+    try {
+      return await _remote.fetchProducts();
+    } on VoucherException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw VoucherException(
+        e.message,
+        errors: e.errors,
+        statusCode: e.statusCode,
+      );
+    } catch (e) {
+      throw VoucherException('Gagal memuat produk: $e');
+    }
+  }
+
+  Future<MitraProduct> createProduct(
+    Map<String, dynamic> fields, {
+    XFile? photo,
+  }) async {
+    try {
+      return await _remote.createProduct(fields, photo: photo);
+    } on VoucherException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw VoucherException(
+        e.message,
+        errors: e.errors,
+        statusCode: e.statusCode,
+      );
+    } catch (e) {
+      throw VoucherException('Gagal membuat produk: $e');
+    }
+  }
+
+  Future<MitraProduct> uploadProductPhoto(int id, XFile photo) async {
+    try {
+      return await _remote.uploadProductPhoto(id, photo);
+    } on VoucherException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw VoucherException(
+        e.message,
+        errors: e.errors,
+        statusCode: e.statusCode,
+      );
+    } catch (e) {
+      throw VoucherException('Gagal mengunggah foto produk: $e');
+    }
+  }
+
+  Future<MitraProduct> updateProduct(
+    int id,
+    Map<String, dynamic> fields,
+  ) async {
+    try {
+      return await _remote.updateProduct(id, fields);
+    } on VoucherException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw VoucherException(
+        e.message,
+        errors: e.errors,
+        statusCode: e.statusCode,
+      );
+    } catch (e) {
+      throw VoucherException('Gagal memperbarui produk: $e');
+    }
+  }
+
+  Future<void> deleteProduct(int id) async {
+    try {
+      await _remote.deleteProduct(id);
+    } on VoucherException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw VoucherException(
+        e.message,
+        errors: e.errors,
+        statusCode: e.statusCode,
+      );
+    } catch (e) {
+      throw VoucherException('Gagal menghapus produk: $e');
     }
   }
 

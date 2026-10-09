@@ -7,6 +7,7 @@ import '../../bloc/merchant/merchant_bloc.dart';
 import '../../bloc/merchant/merchant_event.dart';
 import '../../bloc/merchant/merchant_state.dart';
 import '../../models/merchant_dashboard.dart';
+import 'merchant_products_screen.dart';
 import 'riwayat_pencairan_screen.dart';
 import 'scan_voucher_screen.dart';
 
@@ -164,6 +165,8 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
             ],
             const SizedBox(height: 16),
             _buildRiwayatCard(context),
+            const SizedBox(height: 12),
+            _buildProductsCard(context),
             const SizedBox(height: 16),
             _buildDarkTotalCard(dashboard),
             const SizedBox(height: 16),
@@ -541,6 +544,64 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                 ),
               ),
               const Icon(Icons.chevron_right, color: Colors.black38, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductsCard(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MerchantProductsScreen()),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Row(
+            children: [
+              SizedBox(width: 0),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Produk Toko',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Tambah produk + harga fix untuk funding admin',
+                      style: TextStyle(fontSize: 11, color: Colors.black54),
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.black38, size: 22),
             ],
           ),
         ),

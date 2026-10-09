@@ -13,7 +13,9 @@ class CacheKeys {
   /// Sesi soal per node (global per node untuk hari berjalan).
   static String sagaSession(int missionId) => 'saga_session_$missionId';
 
-  static String vouchers(String? category) => 'vouchers_${category ?? 'all'}';
+  static String vouchers(String? category, [String? city]) =>
+      'vouchers_${category ?? 'all'}_${(city == null || city.isEmpty) ? 'all' : city}';
+  static const String voucherCities = 'voucher_cities';
   static String myVouchers(String uid) => 'my_vouchers_$uid';
   static String ecoPoints(String uid) => 'eco_points_$uid';
 

@@ -75,25 +75,96 @@ class Voucher {
   };
 }
 
+/// Alamat lengkap usaha mitra (semua nullable dari backend).
+class MitraAddress {
+  const MitraAddress({
+    required this.alamat,
+    required this.kelurahan,
+    required this.kecamatan,
+    required this.kota,
+    required this.provinsi,
+    required this.kodePos,
+  });
+
+  final String alamat;
+  final String kelurahan;
+  final String kecamatan;
+  final String kota;
+  final String provinsi;
+  final String kodePos;
+
+  factory MitraAddress.fromJson(Map<String, dynamic> json) {
+    return MitraAddress(
+      alamat: json['alamat'] as String? ?? '',
+      kelurahan: json['kelurahan'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
+      kota: json['kota'] as String? ?? '',
+      provinsi: json['provinsi'] as String? ?? '',
+      kodePos: json['kode_pos'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'alamat': alamat,
+        'kelurahan': kelurahan,
+        'kecamatan': kecamatan,
+        'kota': kota,
+        'provinsi': provinsi,
+        'kode_pos': kodePos,
+      };
+
+  /// Baris kota untuk kartu kecil, fallback '-'.
+  String get cityLabel => kota.isNotEmpty ? kota : '-';
+
+  /// Alamat lengkap 1 baris untuk detail (bagian kosong dibuang).
+  String get fullLabel {
+    final parts = [alamat, kelurahan, kecamatan, kota, provinsi, kodePos]
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? '-' : parts.join(', ');
+  }
+}
+
 /// Info mitra pemilik voucher.
 class MitraInfo {
-  const MitraInfo({required this.name, required this.storeName});
+  const MitraInfo({
+    required this.name,
+    required this.storeName,
+    required this.city,
+    required this.address,
+  });
 
   final String name;
   final String storeName;
+  final String city;
+  final MitraAddress address;
 
   factory MitraInfo.fromJson(Map<String, dynamic> json) {
     return MitraInfo(
       name: json['name'] as String? ?? '',
       storeName: json['store_name'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      address: MitraAddress.fromJson(
+        json['address'] as Map<String, dynamic>? ?? const {},
+      ),
     );
   }
 
-  Map<String, dynamic> toJson() => {'name': name, 'store_name': storeName};
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'store_name': storeName,
+        'city': city,
+        'address': address.toJson(),
+      };
 
   /// Nama toko untuk tampilan, fallback ke nama owner.
   String get displayName =>
       storeName.isNotEmpty ? storeName : (name.isNotEmpty ? name : '-');
+
+  /// Kota efektif: field city, fallback address.kota.
+  String get displayCity =>
+      city.isNotEmpty ? city : address.cityLabel;
 }
 
 /// Daftar kategori voucher + label Indonesia.

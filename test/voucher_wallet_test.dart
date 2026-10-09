@@ -60,7 +60,7 @@ class FakeVoucherRepository extends VoucherRepository {
   Exception? error;
 
   @override
-  Future<List<Voucher>> getVouchers({String? category}) async {
+  Future<List<Voucher>> getVouchers({String? category, String? city}) async {
     if (error != null) throw error!;
     return [Voucher.fromJson(_voucherJson)];
   }

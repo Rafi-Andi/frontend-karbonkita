@@ -1,6 +1,7 @@
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/dio_client.dart';
 import '../../models/donation.dart';
+import '../../models/mitra_product.dart';
 
 /// Akses mentah ke endpoint donasi & campaign backend.
 ///
@@ -112,7 +113,9 @@ class DonationRemoteDatasource {
   }
 
   /// POST /api/admin/vouchers — voucher didanai campaign (201).
-  /// 422 bila dana campaign kurang / mitra belum verified.
+  /// Body baru: {campaign_id, mitra_product_id, stock, expired_at}.
+  /// Harga snapshot dari produk, points auto ceil(rupiah/40).
+  /// 422 bila dana campaign kurang / produk nonaktif.
   Future<FundedVoucherResult> createFundedVoucher(
     Map<String, dynamic> fields,
   ) async {
@@ -122,5 +125,25 @@ class DonationRemoteDatasource {
       return FundedVoucherResult.fromJson(data);
     }
     throw const FormatException('Format hasil voucher tidak dikenali.');
+  }
+
+  /// GET /api/admin/mitra-products — picker produk untuk funding.
+  /// Mendukung ?mitra_profile_id=&is_active=&category=.
+  Future<List<MitraProduct>> fetchAdminMitraProducts({
+    int? mitraProfileId,
+  }) async {
+    var path = ApiEndpoints.adminMitraProducts;
+    if (mitraProfileId != null) {
+      path += '?mitra_profile_id=$mitraProfileId';
+    }
+    final envelope = await _client.get(path);
+    final data = envelope['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(MitraProduct.fromJson)
+          .toList();
+    }
+    throw const FormatException('Format daftar produk tidak dikenali.');
   }
 }

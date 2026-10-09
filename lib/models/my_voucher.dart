@@ -1,7 +1,7 @@
 /// Voucher milik user dari `GET /api/user/my-vouchers`.
 /// Backend VoucherClaimResource: claim_id, qr_token, status,
 /// claimed_at, used_at, voucher{id,title,description,image_url,
-/// rupiah_value,expired_at}, mitra{store_name,name}.
+/// rupiah_value,expired_at}, mitra{store_name,name,city,address{...}}.
 class MyVoucherClaim {
   const MyVoucherClaim({
     required this.claimId,
@@ -17,6 +17,8 @@ class MyVoucherClaim {
     required this.expiredAt,
     required this.storeName,
     required this.ownerName,
+    required this.city,
+    required this.addressLabel,
   });
 
   final int claimId;
@@ -32,6 +34,8 @@ class MyVoucherClaim {
   final String expiredAt;
   final String storeName;
   final String ownerName;
+  final String city;
+  final String addressLabel;
 
   bool get isActive => status == 'claimed';
   bool get isUsed => status == 'used';
@@ -39,6 +43,21 @@ class MyVoucherClaim {
   factory MyVoucherClaim.fromJson(Map<String, dynamic> json) {
     final voucher = json['voucher'] as Map<String, dynamic>? ?? const {};
     final mitra = json['mitra'] as Map<String, dynamic>? ?? const {};
+    final address = mitra['address'] as Map<String, dynamic>? ?? const {};
+    final city = (mitra['city'] as String? ?? '').trim().isNotEmpty
+        ? (mitra['city'] as String? ?? '')
+        : (address['kota'] as String? ?? '');
+    final addressParts = [
+      address['alamat'],
+      address['kelurahan'],
+      address['kecamatan'],
+      address['kota'],
+      address['provinsi'],
+      address['kode_pos'],
+    ]
+        .map((e) => (e as String? ?? '').trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
     return MyVoucherClaim(
       claimId: _toInt(json['claim_id']),
       qrToken: json['qr_token'] as String? ?? '',
@@ -53,6 +72,9 @@ class MyVoucherClaim {
       expiredAt: voucher['expired_at'] as String? ?? '',
       storeName: mitra['store_name'] as String? ?? '',
       ownerName: mitra['name'] as String? ?? '',
+      city: city,
+      addressLabel:
+          addressParts.isEmpty ? '' : addressParts.join(', '),
     );
   }
 
@@ -70,7 +92,7 @@ class MyVoucherClaim {
       'rupiah_value': rupiahValue,
       'expired_at': expiredAt,
     },
-    'mitra': {'store_name': storeName, 'name': ownerName},
+    'mitra': {'store_name': storeName, 'name': ownerName, 'city': city},
   };
 }
 

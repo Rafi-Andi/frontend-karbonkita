@@ -1,6 +1,7 @@
 import '../../core/network/auth_exception.dart';
 import '../../core/network/voucher_exception.dart';
 import '../../models/donation.dart';
+import '../../models/mitra_product.dart';
 import '../datasources/donation_remote_datasource.dart';
 
 /// Orkestrasi data donasi & campaign.
@@ -66,6 +67,13 @@ class DonationRepository {
     () => _remote.createFundedVoucher(fields),
     'Gagal membuat voucher',
   );
+
+  /// Produk untuk picker admin (hanya verified+aktif yang fundable).
+  Future<List<MitraProduct>> getAdminMitraProducts({int? mitraProfileId}) =>
+      _guard(
+        () => _remote.fetchAdminMitraProducts(mitraProfileId: mitraProfileId),
+        'Gagal memuat produk mitra',
+      );
 
   Future<T> _guard<T>(Future<T> Function() call, String fallback) async {
     try {

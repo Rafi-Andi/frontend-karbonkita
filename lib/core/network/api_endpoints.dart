@@ -5,7 +5,8 @@
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://mage.pemudasintaks.web.id/api',
+    // defaultValue: 'https://mage.pemudasintaks.web.id/api',
+    defaultValue: 'http://localhost:8000/api',
   );
 
   // Auth
@@ -32,10 +33,18 @@ class ApiEndpoints {
   static const String vouchers = '/vouchers';
   static const String vouchersClaim = '/vouchers/claim';
   static const String myVouchers = '/user/my-vouchers';
+  static const String voucherCities = '/vouchers/cities';
 
-  /// GET /api/vouchers, opsional filter `?category=kuliner|...`.
-  static String vouchersQuery({String? category}) =>
-      category == null ? vouchers : '$vouchers?category=$category';
+  /// GET /api/vouchers, opsional filter `?category=` dan `?city=`.
+  static String vouchersQuery({String? category, String? city}) {
+    final params = <String>[];
+    if (category != null) params.add('category=$category');
+    if (city != null && city.isNotEmpty) {
+      params.add('city=${Uri.encodeComponent(city)}');
+    }
+    if (params.isEmpty) return vouchers;
+    return '$vouchers?${params.join('&')}';
+  }
 
   // Dashboard (saldo eco_points)
   static const String userDashboard = '/user/dashboard';
@@ -53,6 +62,10 @@ class ApiEndpoints {
   static const String merchantDashboard = '/merchant/dashboard';
   static const String merchantStatus = '/merchant/status';
   static const String merchantDisbursements = '/merchant/disbursements';
+  static const String merchantProducts = '/merchant/products';
+
+  static String merchantProduct(int id) => '$merchantProducts/$id';
+  static String merchantProductPhoto(int id) => '${merchantProduct(id)}/photo';
 
   // Redeem voucher oleh kasir (QR scan / input manual token).
   // Body: {unique_code: qr_token}. Token asli backend format KBK-XXX-XXX.
@@ -70,6 +83,7 @@ class ApiEndpoints {
   // Admin donasi & pendanaan (role:admin).
   static const String adminDonationCampaigns = '/admin/donation-campaigns';
   static const String adminVouchers = '/admin/vouchers';
+  static const String adminMitraProducts = '/admin/mitra-products';
 
   static String adminDonationCampaign(int id) => '$adminDonationCampaigns/$id';
 

@@ -10,6 +10,7 @@ import 'voucher_state.dart';
 class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
   VoucherBloc(this._repository) : super(const VoucherState()) {
     on<VouchersLoaded>(_onVouchersLoaded);
+    on<VoucherCitiesLoaded>(_onCitiesLoaded);
     on<MyVouchersLoaded>(_onMyVouchersLoaded);
     on<VoucherClaimSubmitted>(_onClaimSubmitted);
     on<VoucherClaimReset>(_onClaimReset);
@@ -21,16 +22,18 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
     VouchersLoaded event,
     Emitter<VoucherState> emit,
   ) async {
-    final isSameCategory = state.selectedCategory == event.category;
+    final isSameFilter = state.selectedCategory == event.category &&
+        state.selectedCity == event.city;
     if (state.status == VoucherStatus.loaded &&
         state.vouchers.isNotEmpty &&
-        isSameCategory) {
+        isSameFilter) {
       return;
     }
-    // Tampilkan cache Hive instan (termasuk saat ganti kategori).
+    // Tampilkan cache Hive instan (termasuk saat ganti kategori/kota).
     try {
       final cached = await _repository.getCachedVouchers(
         category: event.category,
+        city: event.city,
       );
       final cachedPoints = await _repository.getCachedEcoPoints();
       if (cached.vouchers.isNotEmpty || cachedPoints != null) {
@@ -41,12 +44,13 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
                 ? cached.vouchers
                 : state.vouchers,
             selectedCategory: event.category,
+            selectedCity: event.city,
             ecoPoints: cachedPoints ?? state.ecoPoints,
             isOffline: true,
             lastUpdated: cached.savedAt ?? state.lastUpdated,
           ),
         );
-        if (isSameCategory && cached.vouchers.isNotEmpty) {
+        if (isSameFilter && cached.vouchers.isNotEmpty) {
           // Tetap lanjut refresh diam-diam di bawah.
         }
       } else if (state.vouchers.isEmpty) {
@@ -54,11 +58,17 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
           state.copyWith(
             status: VoucherStatus.loading,
             selectedCategory: event.category,
+            selectedCity: event.city,
             errorMessage: null,
           ),
         );
       } else {
-        emit(state.copyWith(selectedCategory: event.category));
+        emit(
+          state.copyWith(
+            selectedCategory: event.category,
+            selectedCity: event.city,
+          ),
+        );
       }
     } catch (_) {
       if (state.vouchers.isEmpty) {
@@ -66,6 +76,7 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
           state.copyWith(
             status: VoucherStatus.loading,
             selectedCategory: event.category,
+            selectedCity: event.city,
             errorMessage: null,
           ),
         );
@@ -73,7 +84,10 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
     }
 
     try {
-      final vouchers = await _repository.getVouchers(category: event.category);
+      final vouchers = await _repository.getVouchers(
+        category: event.category,
+        city: event.city,
+      );
       int? ecoPoints = state.ecoPoints;
       try {
         ecoPoints = await _repository.getEcoPoints();
@@ -123,6 +137,22 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
         ),
       );
     }
+  }
+
+  Future<void> _onCitiesLoaded(
+    VoucherCitiesLoaded event,
+    Emitter<VoucherState> emit,
+  ) async {
+    try {
+      final cached = await _repository.getCachedVoucherCities();
+      if (cached.isNotEmpty) {
+        emit(state.copyWith(cities: cached));
+      }
+    } catch (_) {}
+    try {
+      final cities = await _repository.getVoucherCities();
+      emit(state.copyWith(cities: cities));
+    } catch (_) {}
   }
 
   Future<void> _onMyVouchersLoaded(
@@ -223,8 +253,11 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
     );
     try {
       final result = await _repository.claimVoucher(voucherId: event.voucherId);
-      // Klaim mengubah stok + saldo → muat ulang daftar, saldo, dompet.
-      final vouchers = await _repository.getVouchers();
+      // Klaim mengubah stok + saldo → muat ulang daftar (filter aktif), saldo, dompet.
+      final vouchers = await _repository.getVouchers(
+        category: state.selectedCategory,
+        city: state.selectedCity,
+      );
       final ecoPoints = await _repository.getEcoPoints();
       final inventory = await _repository.getMyVouchers();
       emit(

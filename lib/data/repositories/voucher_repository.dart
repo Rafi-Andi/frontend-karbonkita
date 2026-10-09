@@ -7,6 +7,7 @@ import '../datasources/voucher_remote_datasource.dart';
 import '../../models/dashboard.dart';
 import '../../models/my_voucher.dart';
 import '../../models/voucher.dart';
+import '../../models/voucher_city.dart';
 
 /// Orkestrasi data marketplace voucher + cache offline read-only.
 ///
@@ -32,14 +33,17 @@ class VoucherRepository {
   // ---------- vouchers ----------
 
   /// Ambil daftar voucher yang bisa diklaim dari backend.
-  /// [category] null = semua kategori.
-  Future<List<Voucher>> getVouchers({String? category}) async {
+  /// [category] null = semua kategori, [city] null/kosong = semua kota.
+  Future<List<Voucher>> getVouchers({String? category, String? city}) async {
     try {
-      final result = await _remote.fetchVouchers(category: category);
+      final result = await _remote.fetchVouchers(
+        category: category,
+        city: city,
+      );
       final cache = _cache;
       if (cache != null) {
         await cache.writeJson(
-          CacheKeys.vouchers(category),
+          CacheKeys.vouchers(category, city),
           result.map((v) => v.toJson()).toList(),
         );
       }
@@ -53,12 +57,13 @@ class VoucherRepository {
 
   Future<({List<Voucher> vouchers, DateTime? savedAt})> getCachedVouchers({
     String? category,
+    String? city,
   }) async {
     final cache = _cache;
     if (cache == null) {
       return (vouchers: const <Voucher>[], savedAt: null);
     }
-    final key = CacheKeys.vouchers(category);
+    final key = CacheKeys.vouchers(category, city);
     final raw = cache.readList(key);
     if (raw == null) return (vouchers: const <Voucher>[], savedAt: null);
     try {
@@ -193,6 +198,40 @@ class VoucherRepository {
       );
     } catch (_) {
       return (inventory: null, savedAt: null);
+    }
+  }
+
+  /// Daftar kota yang punya voucher aktif (opsi filter).
+  Future<List<VoucherCity>> getVoucherCities() async {
+    try {
+      final result = await _remote.fetchVoucherCities();
+      final cache = _cache;
+      if (cache != null) {
+        await cache.writeJson(
+          CacheKeys.voucherCities,
+          result
+              .map((c) => {'city': c.city, 'voucher_count': c.voucherCount})
+              .toList(),
+        );
+      }
+      return result;
+    } on VoucherException {
+      rethrow;
+    } catch (e) {
+      throw VoucherException('Gagal memuat daftar kota: $e');
+    }
+  }
+
+  Future<List<VoucherCity>> getCachedVoucherCities() async {
+    final raw = _cache?.readList(CacheKeys.voucherCities);
+    if (raw == null) return const [];
+    try {
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map(VoucherCity.fromJson)
+          .toList();
+    } catch (_) {
+      return const [];
     }
   }
 

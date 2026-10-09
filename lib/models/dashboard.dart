@@ -46,6 +46,8 @@ class DashboardData {
 class DashboardUser {
   const DashboardUser({
     required this.name,
+    required this.kota,
+    required this.kecamatan,
     required this.rt,
     required this.rw,
     required this.kelurahan,
@@ -62,6 +64,8 @@ class DashboardUser {
   });
 
   final String name;
+  final String kota;
+  final String kecamatan;
   final String rt;
   final String rw;
   final String kelurahan;
@@ -79,6 +83,8 @@ class DashboardUser {
   factory DashboardUser.fromJson(Map<String, dynamic> json) {
     return DashboardUser(
       name: json['name'] as String? ?? '',
+      kota: json['kota'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
       rt: json['rt']?.toString() ?? '',
       rw: json['rw']?.toString() ?? '',
       kelurahan: json['kelurahan'] as String? ?? '',
@@ -97,6 +103,8 @@ class DashboardUser {
 
   Map<String, dynamic> toJson() => {
     'name': name,
+    'kota': kota,
+    'kecamatan': kecamatan,
     'rt': rt,
     'rw': rw,
     'kelurahan': kelurahan,

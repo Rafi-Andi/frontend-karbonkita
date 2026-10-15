@@ -44,6 +44,7 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/merchant_dashboard_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
+import 'ui/screens/splash_screen.dart';
 import 'core/storage/onboarding_storage.dart';
 
 Future<void> main() async {
@@ -198,20 +199,37 @@ class MyApp extends StatelessWidget {
 /// Auto-login: token permanen → langsung Home, tanpa token → Onboarding
 /// (sekali saja) → Login.
 /// Offline: profil lokal tetap dianggap sesi agar cache offline tampil.
-class _SessionGate extends StatelessWidget {
+///
+/// [SplashScreen] tampil minimum 2 detik sejak aplikasi dibuka,
+/// lalu alur sesi di bawahnya berjalan seperti biasa.
+class _SessionGate extends StatefulWidget {
   const _SessionGate();
+
+  @override
+  State<_SessionGate> createState() => _SessionGateState();
+}
+
+class _SessionGateState extends State<_SessionGate> {
+  bool _splashDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _splashDone = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        if (!_splashDone) return const SplashScreen();
         switch (state.status) {
           case AuthStatus.initial:
           case AuthStatus.checking:
           case AuthStatus.loading:
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const SplashScreen();
           case AuthStatus.authenticated:
             final role = state.user?.role ?? 'warga';
             if (role == 'mitra') return const MerchantDashboardScreen();

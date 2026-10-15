@@ -235,13 +235,31 @@ class VoucherRepository {
     }
   }
 
-  /// Klaim voucher dengan poin. 401/422/500 diteruskan dengan statusCode.
+  /// Klaim voucher dengan poin. 401/422 diteruskan dengan statusCode.
+  /// Backend lawas (sudah deploy di VPS) membalas 500 untuk klaim ganda,
+  /// jadi 500 khusus endpoint ini dipetakan tegas ke pesan sudah ditukarkan.
+  static const claimAlreadyMessage = 'Hadiah sudah pernah ditukarkan.';
+
   Future<ClaimResult> claimVoucher({required int voucherId}) async {
     try {
       return await _remote.claimVoucher(voucherId: voucherId);
-    } on VoucherException {
+    } on VoucherException catch (e) {
+      if (e.statusCode == 500) {
+        throw VoucherException(
+          claimAlreadyMessage,
+          errors: e.errors,
+          statusCode: e.statusCode,
+        );
+      }
       rethrow;
     } on AuthException catch (e) {
+      if (e.statusCode == 500) {
+        throw VoucherException(
+          claimAlreadyMessage,
+          errors: e.errors,
+          statusCode: e.statusCode,
+        );
+      }
       throw VoucherException(
         e.message,
         errors: e.errors,

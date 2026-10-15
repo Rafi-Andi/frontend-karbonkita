@@ -99,7 +99,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   void _reloadWith(String? category, String? city) {
-    context.read<VoucherBloc>().add(VouchersLoaded(category: category, city: city));
+    context.read<VoucherBloc>().add(
+      VouchersLoaded(category: category, city: city),
+    );
   }
 
   void _onClaimTap(Voucher voucher) {
@@ -128,8 +130,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 14, color: Colors.grey),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 14,
+                  color: Colors.grey,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -407,38 +412,46 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
           );
         }
-        final valid = state.selectedCity == null ||
+        final valid =
+            state.selectedCity == null ||
             items.any((e) => e.value == state.selectedCity);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.shade300),
+        return DropdownButtonFormField<String?>(
+          value: valid ? state.selectedCity : null,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'Kota',
+            hintText: 'Pilih kota',
+            floatingLabelStyle: const TextStyle(color: Colors.green),
+            prefixIcon: const Icon(
+              Icons.location_on_outlined,
+              size: 16,
+              color: Colors.green,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.green, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 4,
+            ),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on_outlined,
-                  size: 16, color: Colors.green),
-              const SizedBox(width: 6),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    value: valid ? state.selectedCity : null,
-                    isExpanded: true,
-                    hint: const Text('Pilih kota',
-                        style: TextStyle(fontSize: 12)),
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black87),
-                    items: items,
-                    onChanged: (v) => _reloadWith(
-                      context.read<VoucherBloc>().state.selectedCategory,
-                      v,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          hint: const Text('Pilih kota', style: TextStyle(fontSize: 12)),
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
+          items: items,
+          onChanged: (v) => _reloadWith(
+            context.read<VoucherBloc>().state.selectedCategory,
+            v,
           ),
         );
       },
@@ -472,10 +485,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       : () {
                           _reloadWith(
                             category.value,
-                            context
-                                .read<VoucherBloc>()
-                                .state
-                                .selectedCity,
+                            context.read<VoucherBloc>().state.selectedCity,
                           );
                         },
                   child: Container(
@@ -690,8 +700,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         }
       }
     }
-    final citySuffix =
-        (selectedCity != null && selectedCity.isNotEmpty) ? ' di $selectedCity' : '';
+    final citySuffix = (selectedCity != null && selectedCity.isNotEmpty)
+        ? ' di $selectedCity'
+        : '';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -863,14 +874,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   if (hasLocation)
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined,
-                            size: 12, color: Colors.grey),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
                             area.isEmpty ? city : '$city • $area',
                             style: const TextStyle(
-                                fontSize: 10, color: Colors.black54),
+                              fontSize: 10,
+                              color: Colors.black54,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),

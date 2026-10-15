@@ -29,56 +29,59 @@ class RegionDropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = !loading && items.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: enabled ? Colors.white : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Region>(
-          isExpanded: true,
-          value: value,
-          icon: loading
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Colors.grey.shade600,
-                  size: 16,
-                ),
-          hint: Row(
-            children: [
-              Icon(icon, color: Colors.green, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  loading ? 'Memuat...' : hint,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          items: items
-              .map(
-                (r) => DropdownMenuItem<Region>(
-                  value: r,
-                  child: Text(
-                    r.name,
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: enabled ? onChanged : null,
+    return DropdownButtonFormField<Region>(
+      value: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: hint,
+        hintText: loading ? 'Memuat...' : 'Pilih $hint',
+        floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+        prefixIcon: Icon(icon, color: Colors.green, size: 16),
+        filled: true,
+        fillColor: enabled ? Colors.white : Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF1B8039), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
+      icon: loading
+          ? const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(
+              Icons.keyboard_arrow_down,
+              color: Colors.grey.shade600,
+              size: 16,
+            ),
+      hint: Text(
+        loading ? 'Memuat...' : 'Pilih $hint',
+        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+        overflow: TextOverflow.ellipsis,
+      ),
+      items: items
+          .map(
+            (r) => DropdownMenuItem<Region>(
+              value: r,
+              child: Text(
+                r.name,
+                style: const TextStyle(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: enabled ? onChanged : null,
     );
   }
 }

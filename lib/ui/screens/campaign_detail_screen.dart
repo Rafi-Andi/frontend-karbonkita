@@ -644,14 +644,24 @@ class _DonateSheetState extends State<_DonateSheet> {
           onChanged: (_) => setState(() {}),
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
+            labelText: 'Nominal donasi',
             hintText: 'Atau isi nominal lain (min Rp 10.000)',
             hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            floatingLabelStyle: const TextStyle(color: _green),
             prefixText: 'Rp ',
             filled: true,
             fillColor: const Color(0xFFF4FAF5),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _green, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -665,13 +675,23 @@ class _DonateSheetState extends State<_DonateSheet> {
           enabled: !creating,
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
-            hintText: 'Nama donatur (opsional, tampil di leaderboard)',
+            labelText: 'Nama donatur',
+            hintText: 'Opsional, tampil di leaderboard',
             hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            floatingLabelStyle: const TextStyle(color: _green),
             filled: true,
             fillColor: const Color(0xFFF4FAF5),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _green, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,

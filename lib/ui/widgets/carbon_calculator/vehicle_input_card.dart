@@ -179,6 +179,9 @@ class VehicleInputCard extends StatelessWidget {
                 key: ValueKey(state.vehicleType),
                 initialValue: state.fuelType,
                 decoration: InputDecoration(
+                  labelText: 'Jenis bahan bakar',
+                  hintText: 'Pilih bahan bakar',
+                  floatingLabelStyle: const TextStyle(color: Color(0xFF43A047)),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -190,6 +193,13 @@ class VehicleInputCard extends StatelessWidget {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF43A047),
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 icon: const Icon(Icons.keyboard_arrow_down),

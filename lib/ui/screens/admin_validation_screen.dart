@@ -238,23 +238,6 @@ class _AdminValidationScreenState extends State<AdminValidationScreen> {
   Widget _buildAppBar() {
     return Row(
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.menu, color: Colors.black87, size: 20),
-        ),
-        const SizedBox(width: 10),
         const Icon(Icons.eco, color: Color(0xFF3BC83A), size: 28),
         const SizedBox(width: 6),
         const Column(
@@ -276,57 +259,6 @@ class _AdminValidationScreenState extends State<AdminValidationScreen> {
           ],
         ),
         const Spacer(),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.notifications_none,
-                color: Colors.black87,
-                size: 20,
-              ),
-            ),
-            Positioned(
-              right: 2,
-              top: 2,
-              child: BlocBuilder<AdminMerchantBloc, AdminMerchantState>(
-                buildWhen: (p, c) => p.summary.pending != c.summary.pending,
-                builder: (context, state) {
-                  if (state.summary.pending == 0) {
-                    return const SizedBox.shrink();
-                  }
-                  return Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 10),
-        const CircleAvatar(
-          radius: 18,
-          backgroundColor: Color(0xFFFFE0B2),
-          child: Text('👨‍💼', style: TextStyle(fontSize: 16)),
-        ),
-        const SizedBox(width: 6),
         InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () => _confirmLogout(context),
@@ -418,47 +350,51 @@ class _AdminValidationScreenState extends State<AdminValidationScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: const TextStyle(fontSize: 13),
-        onChanged: (v) => context.read<AdminMerchantBloc>().add(
-          AdminMerchantSearchChanged(v),
+    return TextField(
+      controller: _searchController,
+      style: const TextStyle(fontSize: 13),
+      onChanged: (v) =>
+          context.read<AdminMerchantBloc>().add(AdminMerchantSearchChanged(v)),
+      decoration: InputDecoration(
+        labelText: 'Cari toko atau owner',
+        hintText: 'Cari nama toko atau owner...',
+        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
         ),
-        decoration: InputDecoration(
-          hintText: 'Cari nama toko atau owner...',
-          hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-          suffixIcon: BlocBuilder<AdminMerchantBloc, AdminMerchantState>(
-            buildWhen: (p, c) => p.searchQuery != c.searchQuery,
-            builder: (context, state) {
-              if (state.searchQuery.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                icon: const Icon(Icons.clear, size: 18),
-                onPressed: () {
-                  _searchController.clear();
-                  context.read<AdminMerchantBloc>().add(
-                    const AdminMerchantSearchChanged(''),
-                  );
-                },
-              );
-            },
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1B8039), width: 1.5),
+        ),
+        prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+        suffixIcon: BlocBuilder<AdminMerchantBloc, AdminMerchantState>(
+          buildWhen: (p, c) => p.searchQuery != c.searchQuery,
+          builder: (context, state) {
+            if (state.searchQuery.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.clear, size: 18),
+              onPressed: () {
+                _searchController.clear();
+                context.read<AdminMerchantBloc>().add(
+                  const AdminMerchantSearchChanged(''),
+                );
+              },
+            );
+          },
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
         ),
       ),
     );
@@ -925,17 +861,32 @@ class _DetailSheetState extends State<_DetailSheet> {
                       maxLines: 2,
                       style: const TextStyle(fontSize: 13),
                       decoration: InputDecoration(
+                        labelText: 'Alasan verifikasi',
                         hintText:
-                            'Alasan (wajib bila menolak, opsional bila menyetujui)',
+                            'Wajib bila menolak, opsional bila menyetujui',
                         hintStyle: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade500,
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: Color(0xFF1B8039),
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF4FAF5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1B8039),
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,

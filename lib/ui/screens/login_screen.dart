@@ -249,6 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         builder: (context, fieldError) {
                           return _buildTextField(
+                            label: 'Email atau nomor telepon',
                             hint: 'No HP (+628...) atau Email',
                             helper:
                                 'Bisa nomor HP format +62 atau alamat email',
@@ -272,7 +273,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         builder: (context, fieldError) {
                           return _buildTextField(
-                            hint: 'Kata sandi',
+                            label: 'Kata sandi',
+                            hint: 'Masukkan kata sandi',
                             icon: Icons.lock_outline,
                             isPassword: true,
                             obscureText: _obscurePassword,
@@ -406,6 +408,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildTextField({
+    required String label,
     required String hint,
     required IconData icon,
     TextEditingController? controller,
@@ -417,46 +420,63 @@ class _LoginScreenState extends State<LoginScreen> {
     TextInputType? keyboardType,
     void Function(String)? onSubmitted,
   }) {
+    final hasError = errorText != null;
+    final borderRadius = BorderRadius.circular(12);
+    OutlineInputBorder buildBorder(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: errorText != null
-                  ? const Color(0xFFC62828)
-                  : Colors.grey.shade300,
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: isPassword
+              ? TextInputAction.done
+              : TextInputAction.next,
+          onSubmitted: onSubmitted,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+            prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      obscureText
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.grey.shade600,
+                      size: 20,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: buildBorder(Colors.grey.shade300),
+            enabledBorder: buildBorder(
+              hasError ? const Color(0xFFC62828) : Colors.grey.shade300,
             ),
-          ),
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            textInputAction: isPassword
-                ? TextInputAction.done
-                : TextInputAction.next,
-            onSubmitted: onSubmitted,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-              prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
-              suffixIcon: isPassword
-                  ? IconButton(
-                      icon: Icon(
-                        obscureText
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Colors.grey.shade600,
-                        size: 20,
-                      ),
-                      onPressed: onTogglePassword,
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            focusedBorder: buildBorder(
+              hasError ? const Color(0xFFC62828) : const Color(0xFF1B8039),
+              width: 1.5,
+            ),
+            errorBorder: buildBorder(const Color(0xFFC62828)),
+            focusedErrorBorder: buildBorder(
+              const Color(0xFFC62828),
+              width: 1.5,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 12,
             ),
           ),
         ),

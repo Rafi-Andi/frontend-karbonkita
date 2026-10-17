@@ -19,7 +19,6 @@ class MobilityStatsSheet extends StatelessWidget {
     required this.isSyncing,
     required this.onPauseResume,
     required this.onFinish,
-    this.isSimulating = false,
   });
 
   final String durationText;
@@ -35,9 +34,6 @@ class MobilityStatsSheet extends StatelessWidget {
   final bool isSyncing;
   final VoidCallback onPauseResume;
   final VoidCallback onFinish;
-
-  /// True saat rute berasal dari simulator demo (tetap divalidasi server).
-  final bool isSimulating;
 
   @override
   Widget build(BuildContext context) {
@@ -113,27 +109,6 @@ class MobilityStatsSheet extends StatelessWidget {
                       'Terkunci misi',
                       style: TextStyle(fontSize: 11, color: Colors.black54),
                     ),
-                    if (isSimulating) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9A825),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Demo',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

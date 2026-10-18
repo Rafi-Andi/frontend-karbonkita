@@ -12,6 +12,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../bloc/mission/mission_bloc.dart';
 import '../../bloc/mission/mission_event.dart';
 import '../../bloc/mission/mission_state.dart';
+import '../../core/utils/demo_route.dart';
 import '../widgets/mobility/mobility_stats_sheet.dart';
 
 /// Label Indonesia untuk tipe aktivitas mobilitas.
@@ -85,6 +86,9 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
   /// jalan 2 m (3,6 km/jam), lari 5 m (9 km/jam), sepeda 12 m (21,6 km/jam).
   /// Simulator HANYA menginjeksi titik ke [_handleRawFix] — seluruh
   /// filter, timer, validasi, dan POST backend tetap berjalan normal.
+  ///
+  /// Rute demo mengikuti jalan nyata (via [DemoRouteService]); bila layanan
+  /// rute tidak tersedia, otomatis fallback ke rute lurus berazimut tetap.
   static const double _simAccuracyM = 8;
   static const double _simBearingDeg = 45;
 
@@ -102,6 +106,12 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
 
   final MapController _mapController = MapController();
   final Distance _distance = const Distance();
+
+  /// Presisi penuh (tanpa pembulatan meter) untuk interpolasi rute jalan.
+  final Distance _preciseDistance = const Distance(roundResult: false);
+
+  /// Pengambil rute jalan untuk mode demo.
+  final DemoRouteService _demoRoute = DemoRouteService();
 
   // ---- Required state (kontrak tugas) ----
   // Terkunci dari misi yang dipilih — tidak bisa diganti mid-track.
@@ -122,6 +132,25 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
   /// true saat simulator demo aktif (menggantikan stream GPS asli).
   bool _isSimulating = false;
   Timer? _simTimer;
+
+  /// true saat rute jalan sedang diambil (menonaktifkan tombol demo).
+  bool _isPreparingSim = false;
+
+  /// Polyline rute jalan nyata yang sedang diikuti simulator.
+  /// Kosong = mode fallback garis lurus.
+  List<LatLng> _simRoute = const [];
+
+  /// Index vertex terakhir yang sudah dilewati di [_simRoute].
+  int _simVertex = 0;
+
+  /// Posisi presisi saat ini di sepanjang [_simRoute].
+  LatLng? _simCursor;
+
+  /// true saat leg rute berikutnya sedang diambil (chaining).
+  bool _simExtending = false;
+
+  /// Counter leg rute — memutar azimut agar tiap leg tidak bertumpuk.
+  int _simLegCount = 0;
 
   /// true setelah titik start dikunci (GPS akurat).
   bool _startLocked = false;
@@ -381,7 +410,9 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
       return;
     }
     final segmentM = _distance.as(LengthUnit.Meter, last, point);
-    if (segmentM > _maxSegmentM) return; // teleport/glitch GPS — buang.
+    // Teleport/glitch GPS dibuang — kecuali mode demo, yang boleh melewati
+    // gap awal singkat dari titik start ke jalan terdekat (snap OSRM).
+    if (!_isSimulating && segmentM > _maxSegmentM) return;
     if (segmentM < 1) {
       setState(() => _currentPosition = point);
       return;
@@ -418,17 +449,19 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
 
   /// Dialog konfirmasi sebelum simulator demo dijalankan.
   Future<void> _askStartSimulation() async {
-    if (_isInitializing || _isFinished || _isSimulating) return;
+    if (_isInitializing || _isFinished || _isSimulating || _isPreparingSim) {
+      return;
+    }
     final start = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Simulasi Rute (Demo)?'),
         content: Text(
           'Untuk penilaian indoor: rute buatan digerakkan otomatis '
-          '(±$_simEstimateMinutes menit untuk target '
-          '${_targetKm.toStringAsFixed(2)} KM). Rute tetap divalidasi '
-          'server seperti biasa (jarak, durasi, kecepatan) dan tercatat '
-          'sebagai aktivitas asli.',
+          'mengikuti jalan nyata (±$_simEstimateMinutes menit untuk target '
+          '${_targetKm.toStringAsFixed(2)} KM). Butuh internet; bila gagal '
+          'memuat rute, dipakai rute lurus. Rute tetap divalidasi server '
+          'seperti biasa (jarak, durasi, kecepatan).',
         ),
         actions: [
           TextButton(
@@ -445,19 +478,80 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
     if (start == true) _startSimulation();
   }
 
-  /// Menjalankan simulator: pause stream GPS asli, injeksi titik
-  /// sintetis tiap 2 detik lewat [_handleRawFix] yang sama.
-  void _startSimulation() {
-    if (_isSimulating || _isFinished || !mounted) return;
-    _positionSub?.pause();
-    setState(() => _isSimulating = true);
-    _beginSimTicks();
+  /// Menjalankan simulator: ambil rute jalan nyata dari titik start, lalu
+  /// injeksi titik sintetis tiap 2 detik lewat [_handleRawFix] yang sama.
+  /// Bila rute gagal dimuat (offline), fallback ke rute lurus.
+  Future<void> _startSimulation() async {
+    if (_isSimulating || _isPreparingSim || _isFinished || !mounted) return;
+    final start = _currentPosition;
+    if (start == null) return;
+
+    setState(() => _isPreparingSim = true);
+    try {
+      final route = await _demoRoute.fetchRoadRoute(
+        start: start,
+        activityType: activityType,
+        approxDistanceM: _targetKm * 1000,
+        bearingDeg: _nextSimBearing,
+      );
+      if (!mounted || _isFinished || !_isPreparingSim) return;
+      _simLegCount++;
+      _positionSub?.pause();
+      setState(() {
+        _isPreparingSim = false;
+        _isSimulating = true;
+        _seedSimRoute(start, route);
+      });
+      _beginSimTicks();
+    } on DemoRouteException {
+      if (!mounted || _isFinished || !_isPreparingSim) return;
+      _snack('Rute jalan tidak tersedia (offline). Memakai rute lurus.');
+      _positionSub?.pause();
+      setState(() {
+        _isPreparingSim = false;
+        _isSimulating = true;
+        _clearSimRoute();
+      });
+      _beginSimTicks();
+    }
   }
+
+  /// Siapkan polyline simulator: mulai dari titik start terkunci (agar
+  /// tersambung ke rute) lalu ikuti vertex jalan hasil OSRM.
+  void _seedSimRoute(LatLng start, List<LatLng> route) {
+    final points = <LatLng>[start];
+    for (final p in route) {
+      if (points.last != p) points.add(p);
+    }
+    _simRoute = points;
+    _simVertex = 0;
+    _simCursor = points.first;
+  }
+
+  void _clearSimRoute() {
+    _simRoute = const [];
+    _simVertex = 0;
+    _simCursor = null;
+    _simExtending = false;
+  }
+
+  /// Azimut leg berikutnya — diputar 90° tiap leg agar rute bervariasi.
+  double get _nextSimBearing => (45 + _simLegCount * 90) % 360;
 
   void _beginSimTicks() {
     _simTimer?.cancel();
     _simTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (_isPaused || _isFinished || !mounted) return;
+      if (_simRoute.length >= 2) {
+        final advanced = _advanceSimCursor(_simStepM);
+        if (advanced == null) {
+          _extendSimRoute();
+          return;
+        }
+        _handleRawFix(advanced, _simAccuracyM);
+        return;
+      }
+      // Fallback: rute lurus berazimut tetap.
       final base =
           _currentPosition ??
           (routePoints.isNotEmpty ? routePoints.last : _fallbackCenter);
@@ -466,12 +560,91 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
     });
   }
 
+  /// Majukan cursor [meters] meter di sepanjang [_simRoute], dengan
+  /// interpolasi antar vertex. Return null bila sudah di ujung rute.
+  LatLng? _advanceSimCursor(double meters) {
+    final cursor0 = _simCursor;
+    if (cursor0 == null || _simRoute.length < 2) return null;
+    var cursor = cursor0;
+    var vertex = _simVertex;
+    var remaining = meters;
+
+    while (remaining > 0) {
+      if (vertex >= _simRoute.length - 1) return null;
+      final next = _simRoute[vertex + 1];
+      final segLen = _preciseDistance.as(LengthUnit.Meter, cursor, next);
+      if (segLen <= 0) {
+        vertex++;
+        cursor = next;
+        continue;
+      }
+      if (remaining < segLen) {
+        final bearing = _preciseDistance.bearing(cursor, next);
+        cursor = _preciseDistance.offset(cursor, remaining, bearing);
+        remaining = 0;
+        break;
+      }
+      remaining -= segLen;
+      cursor = next;
+      vertex++;
+    }
+
+    _simCursor = cursor;
+    _simVertex = vertex;
+    return cursor;
+  }
+
+  /// Rute habis sebelum target — ambil leg jalan baru dari posisi sekarang
+  /// dan sambungkan. Bila gagal, beralih ke rute lurus.
+  Future<void> _extendSimRoute() async {
+    if (_simExtending || _isFinished || !mounted) return;
+    final cursor = _simCursor;
+    if (cursor == null) return;
+    _simExtending = true;
+    final bearing = _nextSimBearing;
+    try {
+      final leg = await _demoRoute.fetchRoadRoute(
+        start: cursor,
+        activityType: activityType,
+        approxDistanceM: _targetKm * 1000,
+        bearingDeg: bearing,
+      );
+      if (!mounted || _isFinished || !_isSimulating || _simRoute.isEmpty) {
+        _simExtending = false;
+        return;
+      }
+      _simLegCount++;
+      final lastIndex = _simRoute.length - 1;
+      final appended = <LatLng>[];
+      for (final p in leg) {
+        final base = appended.isEmpty ? _simRoute.last : appended.last;
+        if (base != p) appended.add(p);
+      }
+      setState(() {
+        _simVertex = lastIndex;
+        _simRoute = [..._simRoute, ...appended];
+      });
+      _simExtending = false;
+    } on DemoRouteException {
+      _simExtending = false;
+      if (!mounted) return;
+      _snack('Rute jalan habis. Lanjut dengan rute lurus.');
+      setState(_clearSimRoute);
+    }
+  }
+
   /// Menghentikan simulator dan mengembalikan stream GPS asli.
   void _stopSimulation() {
-    if (!_isSimulating) return;
+    if (!_isSimulating && !_isPreparingSim) return;
     _simTimer?.cancel();
     _simTimer = null;
-    if (mounted) setState(() => _isSimulating = false);
+    if (mounted) {
+      setState(() {
+        _isSimulating = false;
+        _isPreparingSim = false;
+        _clearSimRoute();
+      });
+    }
     if (!_isFinished && !_isPaused) _positionSub?.resume();
   }
 
@@ -780,6 +953,7 @@ class _MobilityTrackerScreenState extends State<MobilityTrackerScreen>
                     isSyncing: isSyncing,
                     isWaitingGps: !_startLocked,
                     isSimulating: _isSimulating,
+                    isPreparingSim: _isPreparingSim,
                     showBackgroundHint: _backgroundReady,
                     onBack: _onBack,
                     onRecenter: _recenter,
@@ -817,6 +991,7 @@ class _TrackerView extends StatelessWidget {
     required this.isSyncing,
     this.isWaitingGps = false,
     this.isSimulating = false,
+    this.isPreparingSim = false,
     this.showBackgroundHint = false,
     required this.onBack,
     required this.onRecenter,
@@ -840,6 +1015,7 @@ class _TrackerView extends StatelessWidget {
   final bool isSyncing;
   final bool isWaitingGps;
   final bool isSimulating;
+  final bool isPreparingSim;
   final bool showBackgroundHint;
   final VoidCallback onBack;
   final VoidCallback onRecenter;
@@ -921,15 +1097,38 @@ class _TrackerView extends StatelessWidget {
                 onTap: onRecenter,
               ),
               const SizedBox(height: 10),
-              _CircleButton(
-                icon: isSimulating ? Icons.stop_circle : Icons.science,
-                iconColor: const Color(0xFFF9A825),
-                onTap: isSimulating ? onStopSimulation : onStartSimulation,
-              ),
+              if (isPreparingSim)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFF9A825),
+                    ),
+                  ),
+                )
+              else
+                _CircleButton(
+                  icon: isSimulating ? Icons.stop_circle : Icons.science,
+                  iconColor: const Color(0xFFF9A825),
+                  onTap: isSimulating ? onStopSimulation : onStartSimulation,
+                ),
             ],
           ),
         ),
-        if (isSimulating)
+        if (isPreparingSim)
           Positioned(
             left: 16,
             right: 16,
@@ -943,11 +1142,18 @@ class _TrackerView extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.science, color: Colors.white, size: 16),
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'MODE DEMO — rute simulasi, tetap divalidasi server.',
+                      'Menyusun rute mengikuti jalan…',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -1029,7 +1235,6 @@ class _TrackerView extends StatelessWidget {
             activityType: activityType,
             isPaused: isPaused,
             isSyncing: isSyncing,
-            isSimulating: isSimulating,
             onPauseResume: onPauseResume,
             onFinish: onFinish,
           ),

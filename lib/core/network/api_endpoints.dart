@@ -1,12 +1,13 @@
 /// Base URL & endpoint API KarbonKita.
 ///
-/// Isi via --dart-define API_BASE_URL saat run/build.
-/// Default localhost untuk Windows/Web, ganti ke 10.0.2.2 untuk emulator Android.
+/// Isi via --dart-define API_BASE_URL saat run/build, mis.
+/// `http://localhost:8000/api` (Windows/Web) atau `http://10.0.2.2:8000/api`
+/// (emulator Android). Default mengarah ke server produksi.
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    // defaultValue: 'https://mage.pemudasintaks.web.id/api',
-    defaultValue: 'http://localhost:8000/api',
+    defaultValue: 'https://karbon.pemudasintaks.web.id/api',
+    // defaultValue: 'http://localhost:8000/api',
   );
 
   // Auth
@@ -118,7 +119,11 @@ class ApiEndpoints {
   /// produksi). Fungsi ini mempertahankan path+query tapi menukar
   /// origin (scheme/host/port) ke [baseUrl] — server yang pasti terjangkau
   /// karena API-nya sendiri jalan di sana. URL relatif juga didukung.
-  /// Return '' bila kosong/tidak valid (UI tampilkan placeholder).
+  ///
+  /// URL absolut dari host eksternal (mis. Cloudinary `res.cloudinary.com`
+  /// atau CDN lain) TIDAK ditimpa — dikembalikan apa adanya, karena gambar
+  /// tidak dilayani server backend. Return '' bila kosong/tidak valid
+  /// (UI tampilkan placeholder).
   static String resolveImageUrl(String? url) {
     if (url == null) return '';
     final raw = url.trim();
@@ -130,11 +135,22 @@ class ApiEndpoints {
       final path = raw.startsWith('/') ? raw : '/$raw';
       return '${base.origin}$path';
     }
+    if (!_isBackendHost(parsed.host, base.host)) {
+      return parsed.toString();
+    }
     final rebuilt = parsed.replace(
       scheme: base.scheme,
       host: base.host,
       port: base.hasPort ? base.port : null,
     );
     return rebuilt.toString();
+  }
+
+  /// True bila [host] merujuk ke server backend sendiri (host API) atau
+  /// host pengembangan lokal yang perlu ditukar ke [baseUrl].
+  static bool _isBackendHost(String host, String baseHost) {
+    if (host == baseHost) return true;
+    const localHosts = {'localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2'};
+    return localHosts.contains(host);
   }
 }

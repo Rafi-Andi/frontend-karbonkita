@@ -22,7 +22,8 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
     VouchersLoaded event,
     Emitter<VoucherState> emit,
   ) async {
-    final isSameFilter = state.selectedCategory == event.category &&
+    final isSameFilter =
+        state.selectedCategory == event.category &&
         state.selectedCity == event.city;
     if (state.status == VoucherStatus.loaded &&
         state.vouchers.isNotEmpty &&
@@ -243,6 +244,26 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
     Emitter<VoucherState> emit,
   ) async {
     if (state.claimStatus == ClaimStatus.claiming) return;
+    // Jaring pengaman kedua (selain pre-check UI): bila voucher sudah ada
+    // di dompet, gagalkan tegas tanpa panggil API (backend lawas balas 500).
+    final ownedInventory = state.myVouchers;
+    if (ownedInventory != null) {
+      final owned = [
+        ...ownedInventory.active,
+        ...ownedInventory.used,
+        ...ownedInventory.expired,
+      ].any((c) => c.voucherId == event.voucherId);
+      if (owned) {
+        emit(
+          state.copyWith(
+            claimStatus: ClaimStatus.failure,
+            claimingVoucherId: event.voucherId,
+            claimErrorMessage: 'Hadiah sudah pernah ditukarkan.',
+          ),
+        );
+        return;
+      }
+    }
     emit(
       state.copyWith(
         claimStatus: ClaimStatus.claiming,
@@ -283,6 +304,17 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
         );
         return;
       }
+      // Backend lawas balas 500 untuk klaim ganda -> pesan tegas.
+      if (e.statusCode == 500) {
+        emit(
+          state.copyWith(
+            claimStatus: ClaimStatus.failure,
+            claimingVoucherId: event.voucherId,
+            claimErrorMessage: 'Hadiah sudah pernah ditukarkan.',
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           claimStatus: ClaimStatus.failure,
@@ -301,6 +333,18 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
         );
         return;
       }
+      // Backend lawas balas 500 untuk klaim ganda -> pesan tegas.
+      // Repository sudah memetakan, ini jaring pengaman bila ada jalur lain.
+      if (e.statusCode == 500) {
+        emit(
+          state.copyWith(
+            claimStatus: ClaimStatus.failure,
+            claimingVoucherId: event.voucherId,
+            claimErrorMessage: 'Hadiah sudah pernah ditukarkan.',
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           claimStatus: ClaimStatus.failure,
@@ -309,6 +353,19 @@ class VoucherBloc extends Bloc<VoucherEvent, VoucherState> {
         ),
       );
     } catch (e) {
+      final raw = '$e';
+      // Bungkus generik yang masih membawa jejak 500 (mis. "kode 500"
+      // atau "Server bermasalah") ikut dipetakan tegas khusus klaim.
+      if (raw.contains('kode 500') || raw.contains('Server bermasalah')) {
+        emit(
+          state.copyWith(
+            claimStatus: ClaimStatus.failure,
+            claimingVoucherId: event.voucherId,
+            claimErrorMessage: 'Hadiah sudah pernah ditukarkan.',
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           claimStatus: ClaimStatus.failure,

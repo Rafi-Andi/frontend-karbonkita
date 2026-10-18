@@ -24,6 +24,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     super.initState();
     context.read<VoucherBloc>().add(const VouchersLoaded());
     context.read<VoucherBloc>().add(const VoucherCitiesLoaded());
+    // Dompet dibutuhkan untuk pre-check "sudah pernah ditukar" sebelum
+    // POST /api/vouchers/claim (backend lawas balas 500 untuk klaim ganda).
+    context.read<VoucherBloc>().add(const MyVouchersLoaded());
   }
 
   /// Format angka ala Indonesia: 1250 -> "1.250".
@@ -60,10 +63,25 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             state.lastClaim!.remainingPoints,
           );
         } else if (state.claimStatus == ClaimStatus.failure) {
+          final msg = state.claimErrorMessage ?? 'Gagal klaim voucher.';
+          final alreadyClaimed = msg.contains('sudah pernah ditukarkan');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.claimErrorMessage ?? 'Gagal klaim voucher.'),
+              content: Text(msg),
               behavior: SnackBarBehavior.floating,
+              action: alreadyClaimed
+                  ? SnackBarAction(
+                      label: 'Lihat Dompet',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DompetVoucherScreen(),
+                          ),
+                        );
+                      },
+                    )
+                  : null,
             ),
           );
           context.read<VoucherBloc>().add(const VoucherClaimReset());
@@ -105,6 +123,36 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   void _onClaimTap(Voucher voucher) {
+    // Pre-check dompet: backend lawas balas 500 untuk klaim ganda,
+    // jadi cegah sebelum panggil API bila voucher sudah ada di dompet.
+    final inventory = context.read<VoucherBloc>().state.myVouchers;
+    if (inventory != null) {
+      final owned = [
+        ...inventory.active,
+        ...inventory.used,
+        ...inventory.expired,
+      ].any((c) => c.voucherId == voucher.id);
+      if (owned) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Hadiah sudah pernah ditukarkan.'),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Lihat Dompet',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DompetVoucherScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        return;
+      }
+    }
     final ecoPoints = context.read<VoucherBloc>().state.ecoPoints;
     if (ecoPoints != null && voucher.pointsCost > ecoPoints) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -635,7 +683,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           mainAxisSpacing: 15,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 0.62,
+          // Dibuat lebih tinggi dari sebelumnya (0.62 -> 0.54) agar
+          // judul 2 baris + lokasi + tombol "Tukar Poin" muat
+          // tanpa overflow vertikal di layar kecil.
+          childAspectRatio: 0.54,
           children: state.vouchers
               .map((voucher) => _buildProductCard(voucher))
               .toList(),
@@ -760,7 +811,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 5,
+            flex: 4,
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(15),
@@ -782,6 +833,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   return Image.network(
                     imageUrl,
                     width: double.infinity,
+                    height: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey.shade200,
@@ -797,10 +849,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           Expanded(
             flex: 6,
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   Row(
                     children: [
@@ -822,6 +874,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               storeName,
@@ -832,21 +885,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            Row(
+                            const Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Image.asset(
-                                  'assets/images/ecopoints.png',
-                                  width: 12,
-                                  height: 12,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
-                                        Icons.eco,
-                                        color: Colors.green,
-                                        size: 12,
-                                      ),
+                                Icon(
+                                  Icons.storefront_outlined,
+                                  color: Colors.grey,
+                                  size: 10,
                                 ),
-                                const SizedBox(width: 2),
-                                const Text(
+                                SizedBox(width: 2),
+                                Text(
                                   'UMKM',
                                   style: TextStyle(
                                     fontSize: 8,
@@ -860,39 +908,46 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       ),
                     ],
                   ),
-                  Text(
-                    voucher.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B8039),
-                      height: 1.2,
+                  const SizedBox(height: 6),
+                  Flexible(
+                    child: Text(
+                      voucher.title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1B8039),
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   if (hasLocation)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            area.isEmpty ? city : '$city • $area',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.black54,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: Colors.grey,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              area.isEmpty ? city : '$city • $area',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.black54,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  const Spacer(),
                   BlocBuilder<VoucherBloc, VoucherState>(
                     buildWhen: (prev, curr) =>
                         prev.claimStatus != curr.claimStatus ||
@@ -912,6 +967,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                             foregroundColor: const Color(0xFF1B8039),
                             disabledBackgroundColor: const Color(0xFFE8F5E9),
                             disabledForegroundColor: const Color(0xFF1B8039),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 6,
@@ -925,44 +983,45 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                             ),
                             elevation: 0,
                           ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (claimingThis)
-                                  const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFF1B8039),
-                                    ),
-                                  )
-                                else ...[
-                                  Image.asset(
-                                    'assets/images/ecopoints.png',
-                                    width: 14,
-                                    height: 14,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(
-                                              Icons.eco,
-                                              color: Color(0xFF1B8039),
-                                              size: 14,
-                                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (claimingThis)
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF1B8039),
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Tukar ${_formatPoints(voucher.pointsCost)} Poin',
+                                )
+                              else ...[
+                                Image.asset(
+                                  'assets/images/ecopoints.png',
+                                  width: 14,
+                                  height: 14,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                        Icons.eco,
+                                        color: Color(0xFF1B8039),
+                                        size: 14,
+                                      ),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Tukar ${_formatPoints(voucher.pointsCost)}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
+                                ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
                       );

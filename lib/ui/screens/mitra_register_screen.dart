@@ -218,7 +218,8 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Isi seluruh field teks dengan data valid + unik (dev only).
+  /// Isi seluruh field teks dengan data valid + unik.
+  /// Sengaja tersedia juga di build release (prod) untuk uji cepat/demo.
   /// Foto tetap dipilih manual karena harus file gambar asli.
   /// Dropdown wilayah dibiarkan auto-preselect rantai Surabaya oleh cubit.
   void _seedForm() {
@@ -481,14 +482,13 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
           elevation: 0,
           foregroundColor: Colors.black87,
           actions: [
-            // Helper dev: isi form otomatis dengan data valid + unik.
-            // Hanya muncul di debug build, tidak ada di release.
-            if (kDebugMode)
-              IconButton(
-                tooltip: 'Isi otomatis (dev)',
-                onPressed: _seedForm,
-                icon: const Icon(Icons.auto_fix_high),
-              ),
+            // Helper isi form otomatis dengan data valid + unik — sengaja
+            // tetap tampil di build release (prod) untuk uji cepat/demo.
+            IconButton(
+              tooltip: 'Isi otomatis (dev)',
+              onPressed: _seedForm,
+              icon: const Icon(Icons.auto_fix_high),
+            ),
           ],
         ),
         body: BlocBuilder<AuthBloc, AuthState>(

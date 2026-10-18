@@ -11,10 +11,20 @@ import 'login_screen.dart';
 /// Navigasi: swipe [PageView] atau tombol progres melingkar.
 /// Halaman terakhir (centang) menyimpan flag lalu ke Login.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key, OnboardingStorage? storage})
-    : _storage = storage;
+  const OnboardingScreen({
+    super.key,
+    OnboardingStorage? storage,
+    this.onFinished,
+  }) : _storage = storage;
 
   final OnboardingStorage? _storage;
+
+  /// Dipanggil setelah onboarding selesai & flag tersimpan. Bila diisi,
+  /// pemanggil (mis. `_OnboardingGate`) yang mengganti layar ke Login di
+  /// dalam tree, TANPA mengganti route — agar `_SessionGate` tetap hidup
+  /// di root dan auto-login setelah masuk bekerja. Bila null (mis. test /
+  /// standalone), fallback `pushReplacement` ke Login.
+  final VoidCallback? onFinished;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -67,6 +77,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final storage = widget._storage ?? OnboardingStorage();
     await storage.setOnboardingSeen();
     if (!mounted) return;
+    if (widget.onFinished != null) {
+      widget.onFinished!();
+      return;
+    }
     Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));

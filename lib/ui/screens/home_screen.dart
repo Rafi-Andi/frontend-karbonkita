@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +8,9 @@ import '../../bloc/auth/auth_event.dart';
 import '../../bloc/dashboard/dashboard_bloc.dart';
 import '../../bloc/dashboard/dashboard_event.dart';
 import '../../bloc/dashboard/dashboard_state.dart';
+import '../../bloc/mission/mission_bloc.dart';
+import '../../bloc/mission/mission_event.dart';
+import '../../bloc/mission/mission_state.dart';
 import '../../models/dashboard.dart';
 import '../../models/mission.dart';
 import 'misi_screen.dart';
@@ -33,19 +38,39 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<DashboardBloc>().add(const DashboardLoaded());
-      }
+      if (!mounted) return;
+      context.read<DashboardBloc>().add(const DashboardLoaded());
+      // Misi Harian Beranda bersumber dari endpoint misi aktif, bukan dari
+      // `daily_missions` pada endpoint dashboard.
+      context.read<MissionBloc>().add(const MissionsLoaded());
     });
   }
 
   Future<void> _onBerandaRefresh() async {
-    final bloc = context.read<DashboardBloc>();
-    final wait = bloc.stream.firstWhere(
+    final dashboard = context.read<DashboardBloc>();
+    final missions = context.read<MissionBloc>();
+    final dashboardWait = dashboard.stream.firstWhere(
       (s) => s.status != DashboardStatus.loading,
     );
-    bloc.add(const DashboardRefreshed());
-    await wait;
+    final missionsWait = missions.stream.firstWhere(
+      (s) => s.status != MissionStatus.loading,
+    );
+    dashboard.add(const DashboardRefreshed());
+    missions.add(const MissionsLoaded(force: true));
+    await Future.wait([dashboardWait, missionsWait]);
+  }
+
+  /// Tiga misi acak yang belum selesai hari ini, diambil dari daftar misi
+  /// aktif di [MissionBloc]. Seed dari `lastUpdated` membuat urutan stabil
+  /// antar-rebuild dan berubah hanya saat data misi dimuat/di-refresh.
+  List<Mission> _pickDailyMissions(MissionState state) {
+    final eligible = state.missions.where((m) => !m.isCompletedToday).toList();
+    if (eligible.isEmpty) return const [];
+    final seed =
+        state.lastUpdated?.millisecondsSinceEpoch ??
+        eligible.fold<int>(0, (acc, m) => acc ^ m.id);
+    final shuffled = [...eligible]..shuffle(Random(seed));
+    return shuffled.take(3).toList();
   }
 
   /// Nama depan untuk sapaan ("Moch. Rafi Andi" -> "Moch.").
@@ -225,9 +250,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 10),
                 _buildProfileSection(dashboard?.user, isLoading: isLoading),
                 const SizedBox(height: 20),
-                _buildMisiHarian(
-                  dashboard?.dailyMissions,
-                  isLoading: isLoading,
+                BlocBuilder<MissionBloc, MissionState>(
+                  builder: (context, missionState) {
+                    final missions = _pickDailyMissions(missionState);
+                    final missionsLoading =
+                        missionState.status == MissionStatus.loading &&
+                        missionState.missions.isEmpty;
+                    return _buildMisiHarian(
+                      missions,
+                      isLoading: missionsLoading,
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 _buildAksiCepat(),

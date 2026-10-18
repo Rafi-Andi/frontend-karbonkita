@@ -104,6 +104,15 @@ class ApiEndpoints {
   static String adminMission(int id) => '$adminMissions/$id';
   static String adminMissionStatus(int id) => '$adminMissions/$id/status';
 
+  // Admin kelola reward/voucher marketplace (role:admin).
+  // `adminVouchers` (atas) dipakai POST buat voucher; ini GET/PATCH.
+  static String adminVoucher(int id) => '$adminVouchers/$id';
+  static String adminVoucherStatus(int id) => '$adminVouchers/$id/status';
+
+  /// Daftar penukar satu reward (paginasi backend 20 per halaman).
+  static String adminVoucherClaims(int id, {int page = 1}) =>
+      '$adminVouchers/$id/claims?page=$page';
+
   static String leaderboardQuery({
     required String scope,
     required String timeframe,

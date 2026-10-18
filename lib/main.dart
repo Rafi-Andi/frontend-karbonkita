@@ -67,7 +67,7 @@ Future<void> main() async {
   );
 
   // Repositori dipakai bersama oleh BLoC sesi. Disimpan di satu container
-  // agar BLoC bisa dibuat ulang setiap ganti akun (lihat _AuthenticatedScope).
+  // agar BLoC bisa dibuat ulang setiap ganti akun (lihat _SessionScope).
   final repositories = AppRepositories(
     mission: MissionRepository(
       MissionRemoteDatasource(dioClient),
@@ -104,7 +104,8 @@ Future<void> main() async {
   );
 
   // AuthBloc hidup sepanjang aplikasi (di atas SessionGate) karena ia yang
-  // menentukan sesi. BLoC data justru dibuat per sesi di _AuthenticatedScope.
+  // menentukan sesi. BLoC data justru dibuat per sesi di _SessionScope
+  // (di atas Navigator, lihat `MaterialApp.builder`).
   final authBloc = AuthBloc(authRepository)..add(const SessionChecked());
 
   runApp(
@@ -164,7 +165,79 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
           useMaterial3: true,
         ),
-        home: _SessionGate(repositories: repositories),
+        home: const _SessionGate(),
+        // BLoC data sesi HARUS berada DI ATAS Navigator. Halaman yang dibuka
+        // lewat `Navigator.push` (Donasi, Kuis, Dompet Voucher, admin, mitra)
+        // adalah route saudara dari `home`, bukan turunannya — kalau provider
+        // diletakkan di dalam `home`, halaman itu tidak menemukan BLoC-nya
+        // (ProviderNotFoundException → layar putih di build release).
+        builder: (context, child) => _SessionScope(
+          repositories: repositories,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Menyediakan semua BLoC data untuk SATU sesi user, di atas Navigator.
+///
+/// Bentuk tree sengaja dijaga tetap (BlocListener → MultiBlocProvider →
+/// Navigator) agar Navigator tidak pernah di-remount saat login/logout —
+/// kalau remount, splash 2 detik akan muncul lagi setelah login.
+///
+/// BLoC dibuat ulang setiap identitas sesi berubah (login akun lain, logout),
+/// sehingga tidak ada state akun lama yang nyangkut. Karena provider tidak
+/// pernah dilepas, route yang sedang di-pop saat logout tetap bisa membaca
+/// BLoC-nya (tidak ada ProviderNotFoundException di tengah animasi).
+class _SessionScope extends StatefulWidget {
+  const _SessionScope({required this.repositories, required this.child});
+
+  final AppRepositories repositories;
+  final Widget child;
+
+  @override
+  State<_SessionScope> createState() => _SessionScopeState();
+}
+
+class _SessionScopeState extends State<_SessionScope> {
+  late _SessionBlocs _blocs;
+  int? _sessionUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionUserId = _userIdOf(context.read<AuthBloc>().state);
+    _blocs = _SessionBlocs(widget.repositories);
+  }
+
+  static int? _userIdOf(AuthState state) =>
+      state.status == AuthStatus.authenticated ? state.user?.id : null;
+
+  void _onSessionChanged(AuthState state) {
+    final nextUserId = _userIdOf(state);
+    if (nextUserId == _sessionUserId) return;
+    setState(() {
+      _sessionUserId = nextUserId;
+      _blocs.dispose();
+      _blocs = _SessionBlocs(widget.repositories);
+    });
+  }
+
+  @override
+  void dispose() {
+    _blocs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, curr) => _userIdOf(prev) != _userIdOf(curr),
+      listener: (context, state) => _onSessionChanged(state),
+      child: MultiBlocProvider(
+        providers: _blocs.providers,
+        child: widget.child,
       ),
     );
   }
@@ -177,9 +250,7 @@ class MyApp extends StatelessWidget {
 /// [SplashScreen] tampil minimum 2 detik sejak aplikasi dibuka,
 /// lalu alur sesi di bawahnya berjalan seperti biasa.
 class _SessionGate extends StatefulWidget {
-  const _SessionGate({required this.repositories});
-
-  final AppRepositories repositories;
+  const _SessionGate();
 
   @override
   State<_SessionGate> createState() => _SessionGateState();
@@ -216,23 +287,13 @@ class _SessionGateState extends State<_SessionGate> {
             case AuthStatus.loading:
               return const SplashScreen();
             case AuthStatus.authenticated:
-              final user = state.user;
-              final role = user?.role ?? 'warga';
-              final Widget destination;
+              final role = state.user?.role ?? 'warga';
               if (role == 'mitra') {
-                destination = const MerchantDashboardScreen();
+                return const MerchantDashboardScreen();
               } else if (role == 'admin') {
-                destination = const AdminValidationScreen();
-              } else {
-                destination = const HomeScreen();
+                return const AdminValidationScreen();
               }
-              // Key per user: ganti akun → seluruh BLoC data dibuang & dibuat
-              // baru, sehingga tidak ada state/cache akun lama yang nyangkut.
-              return _AuthenticatedScope(
-                key: ValueKey('session-${user?.id ?? role}'),
-                repositories: widget.repositories,
-                child: destination,
-              );
+              return const HomeScreen();
             case AuthStatus.unauthenticated:
               return const _OnboardingGate();
           }
@@ -244,98 +305,72 @@ class _SessionGateState extends State<_SessionGate> {
 
 /// Membuat dan memiliki semua BLoC data untuk SATU sesi user.
 ///
-/// Saat key berubah (ganti akun) atau saat logout (subtree dilepas), state
-/// di [dispose] menutup semua BLoC — state in-memory akun lama ikut hilang.
-class _AuthenticatedScope extends StatefulWidget {
-  const _AuthenticatedScope({
-    super.key,
-    required this.repositories,
-    required this.child,
-  });
+/// Dipasang di atas Navigator (lihat [_SessionScope]). Saat sesi berganti,
+/// [dispose] menutup semua BLoC — state in-memory akun lama ikut hilang.
+class _SessionBlocs {
+  _SessionBlocs(AppRepositories r)
+    : mission = MissionBloc(r.mission),
+      voucher = VoucherBloc(r.voucher),
+      dashboard = DashboardBloc(r.voucher),
+      leaderboard = LeaderboardBloc(r.leaderboard),
+      quiz = QuizBloc(r.mission),
+      level = LevelBloc(r.profile),
+      activity = ActivityBloc(r.profile),
+      merchant = MerchantBloc(r.merchant),
+      merchantProduct = MerchantProductBloc(r.merchant),
+      adminMerchant = AdminMerchantBloc(r.adminMerchant),
+      donation = DonationBloc(r.donation),
+      adminCampaign = AdminCampaignBloc(r.donation),
+      adminMission = AdminMissionBloc(r.adminMission),
+      adminReward = AdminRewardBloc(r.adminReward);
 
-  final AppRepositories repositories;
-  final Widget child;
+  final MissionBloc mission;
+  final VoucherBloc voucher;
+  final DashboardBloc dashboard;
+  final LeaderboardBloc leaderboard;
+  final QuizBloc quiz;
+  final LevelBloc level;
+  final ActivityBloc activity;
+  final MerchantBloc merchant;
+  final MerchantProductBloc merchantProduct;
+  final AdminMerchantBloc adminMerchant;
+  final DonationBloc donation;
+  final AdminCampaignBloc adminCampaign;
+  final AdminMissionBloc adminMission;
+  final AdminRewardBloc adminReward;
 
-  @override
-  State<_AuthenticatedScope> createState() => _AuthenticatedScopeState();
-}
+  List<BlocProvider<dynamic>> get providers => [
+    BlocProvider<MissionBloc>.value(value: mission),
+    BlocProvider<VoucherBloc>.value(value: voucher),
+    BlocProvider<DashboardBloc>.value(value: dashboard),
+    BlocProvider<LeaderboardBloc>.value(value: leaderboard),
+    BlocProvider<QuizBloc>.value(value: quiz),
+    BlocProvider<LevelBloc>.value(value: level),
+    BlocProvider<ActivityBloc>.value(value: activity),
+    BlocProvider<MerchantBloc>.value(value: merchant),
+    BlocProvider<MerchantProductBloc>.value(value: merchantProduct),
+    BlocProvider<AdminMerchantBloc>.value(value: adminMerchant),
+    BlocProvider<DonationBloc>.value(value: donation),
+    BlocProvider<AdminCampaignBloc>.value(value: adminCampaign),
+    BlocProvider<AdminMissionBloc>.value(value: adminMission),
+    BlocProvider<AdminRewardBloc>.value(value: adminReward),
+  ];
 
-class _AuthenticatedScopeState extends State<_AuthenticatedScope> {
-  late final MissionBloc _missionBloc;
-  late final VoucherBloc _voucherBloc;
-  late final DashboardBloc _dashboardBloc;
-  late final LeaderboardBloc _leaderboardBloc;
-  late final QuizBloc _quizBloc;
-  late final LevelBloc _levelBloc;
-  late final ActivityBloc _activityBloc;
-  late final MerchantBloc _merchantBloc;
-  late final MerchantProductBloc _merchantProductBloc;
-  late final AdminMerchantBloc _adminMerchantBloc;
-  late final DonationBloc _donationBloc;
-  late final AdminCampaignBloc _adminCampaignBloc;
-  late final AdminMissionBloc _adminMissionBloc;
-  late final AdminRewardBloc _adminRewardBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    final r = widget.repositories;
-    _missionBloc = MissionBloc(r.mission);
-    _voucherBloc = VoucherBloc(r.voucher);
-    _dashboardBloc = DashboardBloc(r.voucher);
-    _leaderboardBloc = LeaderboardBloc(r.leaderboard);
-    _quizBloc = QuizBloc(r.mission);
-    _levelBloc = LevelBloc(r.profile);
-    _activityBloc = ActivityBloc(r.profile);
-    _merchantBloc = MerchantBloc(r.merchant);
-    _merchantProductBloc = MerchantProductBloc(r.merchant);
-    _adminMerchantBloc = AdminMerchantBloc(r.adminMerchant);
-    _donationBloc = DonationBloc(r.donation);
-    _adminCampaignBloc = AdminCampaignBloc(r.donation);
-    _adminMissionBloc = AdminMissionBloc(r.adminMission);
-    _adminRewardBloc = AdminRewardBloc(r.adminReward);
-  }
-
-  @override
   void dispose() {
-    _missionBloc.close();
-    _voucherBloc.close();
-    _dashboardBloc.close();
-    _leaderboardBloc.close();
-    _quizBloc.close();
-    _levelBloc.close();
-    _activityBloc.close();
-    _merchantBloc.close();
-    _merchantProductBloc.close();
-    _adminMerchantBloc.close();
-    _donationBloc.close();
-    _adminCampaignBloc.close();
-    _adminMissionBloc.close();
-    _adminRewardBloc.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: _missionBloc),
-        BlocProvider.value(value: _voucherBloc),
-        BlocProvider.value(value: _dashboardBloc),
-        BlocProvider.value(value: _leaderboardBloc),
-        BlocProvider.value(value: _quizBloc),
-        BlocProvider.value(value: _levelBloc),
-        BlocProvider.value(value: _activityBloc),
-        BlocProvider.value(value: _merchantBloc),
-        BlocProvider.value(value: _merchantProductBloc),
-        BlocProvider.value(value: _adminMerchantBloc),
-        BlocProvider.value(value: _donationBloc),
-        BlocProvider.value(value: _adminCampaignBloc),
-        BlocProvider.value(value: _adminMissionBloc),
-        BlocProvider.value(value: _adminRewardBloc),
-      ],
-      child: widget.child,
-    );
+    mission.close();
+    voucher.close();
+    dashboard.close();
+    leaderboard.close();
+    quiz.close();
+    level.close();
+    activity.close();
+    merchant.close();
+    merchantProduct.close();
+    adminMerchant.close();
+    donation.close();
+    adminCampaign.close();
+    adminMission.close();
+    adminReward.close();
   }
 }
 

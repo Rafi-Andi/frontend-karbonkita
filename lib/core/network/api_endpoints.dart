@@ -1,11 +1,12 @@
 /// Base URL & endpoint API KarbonKita.
 ///
-/// Isi via --dart-define API_BASE_URL saat run/build.
-/// Default localhost untuk Windows/Web, ganti ke 10.0.2.2 untuk emulator Android.
+/// Isi via --dart-define API_BASE_URL saat run/build, mis.
+/// `http://localhost:8000/api` (Windows/Web) atau `http://10.0.2.2:8000/api`
+/// (emulator Android). Default mengarah ke server produksi.
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://mage.pemudasintaks.web.id/api',
+    defaultValue: 'https://karbon.pemudasintaks.web.id/api',
     // defaultValue: 'http://localhost:8000/api',
   );
 

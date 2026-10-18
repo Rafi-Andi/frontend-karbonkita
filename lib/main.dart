@@ -7,6 +7,7 @@ import 'bloc/auth/auth_state.dart';
 import 'bloc/activity/activity_bloc.dart';
 import 'bloc/admin_merchant/admin_merchant_bloc.dart';
 import 'bloc/admin_mission/admin_mission_bloc.dart';
+import 'bloc/admin_reward/admin_reward_bloc.dart';
 import 'bloc/dashboard/dashboard_bloc.dart';
 import 'bloc/donation/donation_bloc.dart';
 import 'bloc/admin_campaign/admin_campaign_bloc.dart';
@@ -23,6 +24,7 @@ import 'core/storage/cache_service.dart';
 import 'core/storage/token_storage.dart';
 import 'data/datasources/admin_merchant_remote_datasource.dart';
 import 'data/datasources/admin_mission_remote_datasource.dart';
+import 'data/datasources/admin_reward_remote_datasource.dart';
 import 'data/datasources/auth_remote_datasource.dart';
 import 'data/datasources/donation_remote_datasource.dart';
 import 'data/datasources/leaderboard_remote_datasource.dart';
@@ -32,6 +34,7 @@ import 'data/datasources/profile_remote_datasource.dart';
 import 'data/datasources/voucher_remote_datasource.dart';
 import 'data/repositories/admin_merchant_repository.dart';
 import 'data/repositories/admin_mission_repository.dart';
+import 'data/repositories/admin_reward_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/donation_repository.dart';
 import 'data/repositories/leaderboard_repository.dart';
@@ -106,6 +109,9 @@ Future<void> main() async {
   final adminMissionBloc = AdminMissionBloc(
     AdminMissionRepository(AdminMissionRemoteDatasource(dioClient)),
   );
+  final adminRewardBloc = AdminRewardBloc(
+    AdminRewardRepository(AdminRewardRemoteDatasource(dioClient)),
+  );
 
   runApp(
     MyApp(
@@ -123,6 +129,7 @@ Future<void> main() async {
       donationBloc: donationBloc,
       adminCampaignBloc: adminCampaignBloc,
       adminMissionBloc: adminMissionBloc,
+      adminRewardBloc: adminRewardBloc,
       connectivity: connectivity,
     ),
   );
@@ -145,6 +152,7 @@ class MyApp extends StatelessWidget {
     required this.donationBloc,
     required this.adminCampaignBloc,
     required this.adminMissionBloc,
+    required this.adminRewardBloc,
     required this.connectivity,
   });
 
@@ -162,6 +170,7 @@ class MyApp extends StatelessWidget {
   final DonationBloc donationBloc;
   final AdminCampaignBloc adminCampaignBloc;
   final AdminMissionBloc adminMissionBloc;
+  final AdminRewardBloc adminRewardBloc;
   final ConnectivityService connectivity;
 
   @override
@@ -182,6 +191,7 @@ class MyApp extends StatelessWidget {
         BlocProvider.value(value: donationBloc),
         BlocProvider.value(value: adminCampaignBloc),
         BlocProvider.value(value: adminMissionBloc),
+        BlocProvider.value(value: adminRewardBloc),
       ],
       child: MaterialApp(
         title: 'KarbonKita',

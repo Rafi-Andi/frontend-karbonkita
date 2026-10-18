@@ -339,7 +339,7 @@ class MerchantBloc extends Bloc<MerchantEvent, MerchantState> {
 
   /// Pesan redeem ramah kasir berdasarkan status backend.
   /// 403 belum verified/tutup atau milik toko lain, 404 tidak ketemu,
-  /// 409 sudah used, 422 expired/inactive, 429 throttle 30/menit.
+  /// 409 sudah used, 422 tenggat lewat / validasi, 429 throttle 30/menit.
   String _friendlyRedeemError(VoucherException e) {
     switch (e.statusCode) {
       case 403:
@@ -351,9 +351,11 @@ class MerchantBloc extends Bloc<MerchantEvent, MerchantState> {
       case 409:
         return 'Voucher sudah pernah dicairkan.';
       case 422:
-        return e.message.isNotEmpty
-            ? e.message
-            : 'Voucher kedaluwarsa atau tidak aktif.';
+        // Error validasi per-field (mis. kode kosong) tampil apa adanya;
+        // sisanya berarti tenggat sudah lewat — reward nonaktif tidak
+        // lagi memblokir redeem (hanya klaim baru di marketplace).
+        if (e.errors.isNotEmpty && e.message.isNotEmpty) return e.message;
+        return 'Voucher sudah kedaluwarsa.';
       case 429:
         return 'Terlalu sering verifikasi. Tunggu sebentar lalu coba lagi.';
       default:

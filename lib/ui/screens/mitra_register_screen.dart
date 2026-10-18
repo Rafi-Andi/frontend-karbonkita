@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -31,6 +32,19 @@ class MitraRegisterScreen extends StatefulWidget {
 class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
   static const _green = Color(0xFF1B8039);
 
+  /// Bank yang didukung Xendit Payout (lihat XenditService::mapBankRouting).
+  static const List<String> _bankOptions = [
+    'Bank BCA',
+    'Bank BNI',
+    'Bank BRI',
+    'Bank Mandiri',
+    'Bank CIMB Niaga',
+    'Bank Danamon',
+    'Bank Permata',
+    'Bank BTN',
+    'Bank Syariah Indonesia',
+  ];
+
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -50,6 +64,7 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
   final _namaBank = TextEditingController();
   final _nomorRekening = TextEditingController();
   final _namaPemilikRekening = TextEditingController();
+  String? _selectedBank;
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -242,6 +257,7 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
       _nomorKtp.text = '3578$digits12';
       _nomorNib.text = 'NIB$stamp';
       _namaBank.text = 'Bank BCA';
+      _selectedBank = 'Bank BCA';
       _nomorRekening.text = '1234567890';
       _namaPemilikRekening.text = name;
     });
@@ -608,17 +624,24 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
                     ),
                   ]),
                   _section('Rekening Pencairan', [
-                    _field(
-                      _namaBank,
-                      'Nama bank (cth. Bank BCA)',
-                      error: fieldErrors['nama_bank']?.firstOrNull,
-                    ),
+                    _bankField(error: fieldErrors['nama_bank']?.firstOrNull),
                     _field(
                       _nomorRekening,
                       'Nomor rekening',
                       keyboard: TextInputType.number,
+                      placeholder: 'cth. 1234567890',
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(30),
+                      ],
+                      error: fieldErrors['nomor_rekening']?.firstOrNull,
                     ),
-                    _field(_namaPemilikRekening, 'Nama pemilik rekening'),
+                    _field(
+                      _namaPemilikRekening,
+                      'Nama pemilik rekening',
+                      placeholder: 'cth. Budi Santoso',
+                      error: fieldErrors['nama_pemilik_rekening']?.firstOrNull,
+                    ),
                   ]),
                   const SizedBox(height: 8),
                   SizedBox(
@@ -699,16 +722,16 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
 
   Widget _field(
     TextEditingController controller,
-    String hint, {
+    String label, {
     TextInputType? keyboard,
     bool password = false,
     bool obscure = false,
     VoidCallback? onToggle,
     int maxLines = 1,
     String? error,
+    String? placeholder,
+    List<TextInputFormatter>? inputFormatters,
   }) {
-    final hasError = error != null;
-    final errorColor = const Color(0xFFC62828);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -718,47 +741,12 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
           keyboardType: keyboard,
           obscureText: password && obscure,
           maxLines: maxLines,
+          inputFormatters: inputFormatters,
           style: const TextStyle(fontSize: 13),
-          decoration: InputDecoration(
-            labelText: hint,
-            floatingLabelStyle: TextStyle(
-              color: hasError ? errorColor : _green,
-            ),
-            hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-            filled: true,
-            fillColor: const Color(0xFFF4FAF5),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: hasError ? errorColor : Colors.grey.shade300,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: hasError ? errorColor : _green,
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFC62828)),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: Color(0xFFC62828),
-                width: 1.5,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+          decoration: _inputDecoration(
+            label,
+            placeholder: placeholder,
+            error: error,
             suffixIcon: password
                 ? IconButton(
                     icon: Icon(
@@ -779,6 +767,94 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _bankField({String? error}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DropdownButtonFormField<String>(
+          // initialValue tidak ikut berubah saat rebuild; key memaksa field
+          // dibuat ulang ketika bank diisi otomatis lewat _seedForm().
+          key: ValueKey<String?>(_selectedBank),
+          initialValue: _selectedBank,
+          isExpanded: true,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          decoration: _inputDecoration(
+            'Nama bank',
+            placeholder: 'Pilih bank',
+            error: error,
+          ),
+          items: _bankOptions
+              .map(
+                (bank) => DropdownMenuItem<String>(
+                  value: bank,
+                  child: Text(bank, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedBank = value;
+              _namaBank.text = value ?? '';
+            });
+          },
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            error,
+            style: const TextStyle(fontSize: 11, color: Color(0xFFC62828)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    String label, {
+    String? placeholder,
+    String? error,
+    Widget? suffixIcon,
+  }) {
+    final hasError = error != null;
+    final errorColor = const Color(0xFFC62828);
+    return InputDecoration(
+      labelText: label,
+      hintText: placeholder,
+      floatingLabelStyle: TextStyle(color: hasError ? errorColor : _green),
+      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+      filled: true,
+      fillColor: const Color(0xFFF4FAF5),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: hasError ? errorColor : Colors.grey.shade300,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: hasError ? errorColor : _green,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFC62828)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFC62828), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      suffixIcon: suffixIcon,
     );
   }
 

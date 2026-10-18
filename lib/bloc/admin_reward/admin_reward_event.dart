@@ -23,19 +23,15 @@ class AdminRewardStatusSubmitted extends AdminRewardEvent {
   final bool isActive;
 }
 
-/// Ubah stok dan/atau tenggat reward (null = tidak diubah).
+/// Ubah tenggat reward. Stok tidak bisa diubah dari sini — terikat
+/// alokasi dana campaign (backend menolak payload stok).
 class AdminRewardUpdateSubmitted extends AdminRewardEvent {
-  const AdminRewardUpdateSubmitted({
-    required this.id,
-    this.stock,
-    this.expiredAt,
-  });
+  const AdminRewardUpdateSubmitted({required this.id, required this.expiredAt});
 
   final int id;
-  final int? stock;
 
   /// Format Y-m-d.
-  final String? expiredAt;
+  final String expiredAt;
 }
 
 /// Muat halaman pertama daftar penukar satu reward.

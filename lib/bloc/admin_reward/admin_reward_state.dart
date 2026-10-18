@@ -3,7 +3,7 @@ import '../../models/admin_reward.dart';
 /// Status muat daftar reward.
 enum AdminRewardStatus { initial, loading, loaded, error }
 
-/// Status proses submit (toggle aktif/nonaktif, ubah stok & tenggat).
+/// Status proses submit (toggle aktif/nonaktif, ubah tenggat).
 enum AdminRewardSubmitStatus { idle, submitting, success, failure }
 
 /// Status muat daftar penukar (per reward, paginasi).

@@ -10,8 +10,9 @@ import 'admin_reward_state.dart';
 /// BLoC kelola reward/voucher marketplace (role:admin).
 ///
 /// - `AdminRewardsLoaded`: daftar semua reward (tanpa cache).
-/// - `AdminRewardStatusSubmitted` + `AdminRewardUpdateSubmitted`: sukses →
-///   muat ulang daftar; 422 → `submitErrors` per-field untuk sheet rincian.
+/// - `AdminRewardStatusSubmitted` + `AdminRewardUpdateSubmitted` (tenggat):
+///   sukses → muat ulang daftar; 422 → `submitErrors` per-field untuk
+///   sheet rincian.
 /// - `AdminRewardClaimsLoaded` / `AdminRewardClaimsNextPage`: daftar penukar
 ///   satu reward dengan paginasi "Muat lebih banyak".
 class AdminRewardBloc extends Bloc<AdminRewardEvent, AdminRewardState> {
@@ -107,15 +108,10 @@ class AdminRewardBloc extends Bloc<AdminRewardEvent, AdminRewardState> {
     AdminRewardUpdateSubmitted event,
     Emitter<AdminRewardState> emit,
   ) async {
-    if (event.stock == null && event.expiredAt == null) return;
     await _submit(
       emit,
-      () => _repository.updateReward(
-        event.id,
-        stock: event.stock,
-        expiredAt: event.expiredAt,
-      ),
-      successMessage: 'Stok & tenggat reward tersimpan.',
+      () => _repository.updateReward(event.id, expiredAt: event.expiredAt),
+      successMessage: 'Tenggat reward tersimpan.',
     );
   }
 

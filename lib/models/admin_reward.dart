@@ -91,7 +91,7 @@ class AdminReward {
     ).isBefore(DateTime(now.year, now.month, now.day));
   }
 
-  /// Stok habis — tidak bisa ditukar sampai stok ditambah admin.
+  /// Stok habis — tidak bisa ditukar sampai ada pendanaan voucher baru.
   bool get isSoldOut => stock <= 0;
 
   /// Tenggat siap tampil: "30 Nov 2026".

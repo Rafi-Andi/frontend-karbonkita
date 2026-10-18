@@ -498,25 +498,36 @@ class _CampaignFormSheetState extends State<_CampaignFormSheet> {
                     enabled: !submitting,
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Text(
-                        'Status awal: ',
-                        style: TextStyle(fontSize: 12),
+                  DropdownButtonFormField<String>(
+                    value: _status,
+                    decoration: InputDecoration(
+                      labelText: 'Status awal',
+                      floatingLabelStyle: const TextStyle(color: _green),
+                      filled: true,
+                      fillColor: const Color(0xFFF4FAF5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      const SizedBox(width: 8),
-                      DropdownButton<String>(
-                        value: _status,
-                        items: const ['draft', 'active']
-                            .map(
-                              (s) => DropdownMenuItem(value: s, child: Text(s)),
-                            )
-                            .toList(),
-                        onChanged: submitting
-                            ? null
-                            : (v) => setState(() => _status = v ?? 'draft'),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                    ],
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: _green, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                    ),
+                    items: const ['draft', 'active']
+                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                        .toList(),
+                    onChanged: submitting
+                        ? null
+                        : (v) => setState(() => _status = v ?? 'draft'),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -573,13 +584,22 @@ class _CampaignFormSheetState extends State<_CampaignFormSheet> {
       maxLines: maxLines,
       style: const TextStyle(fontSize: 13),
       decoration: InputDecoration(
-        hintText: hint,
+        labelText: hint,
+        floatingLabelStyle: const TextStyle(color: _green),
         hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
         filled: true,
         fillColor: const Color(0xFFF4FAF5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _green, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,

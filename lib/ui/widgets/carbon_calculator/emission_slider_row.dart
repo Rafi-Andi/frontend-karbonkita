@@ -26,86 +26,99 @@ class EmissionSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: const Color(0xFF43A047), size: 18),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            SizedBox(
-              width: 44,
-              child: Text(
-                minLabel,
-                style: const TextStyle(fontSize: 11, color: Colors.black38),
-              ),
-            ),
-            Expanded(
-              child: SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: const Color(0xFF43A047),
-                  inactiveTrackColor: Colors.grey.shade200,
-                  thumbColor: Colors.white,
-                  overlayColor: const Color(0xFF43A047).withValues(alpha: 0.15),
-                  thumbShape: const _RingThumbShape(),
-                  trackHeight: 6,
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 16,
+    return Semantics(
+      label: '$label: $displayValue',
+      slider: true,
+      value: displayValue,
+      increasedValue: maxLabel,
+      decreasedValue: minLabel,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: const Color(0xFF43A047), size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
                   ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              SizedBox(
+                width: 44,
+                child: Text(
+                  minLabel,
+                  style: const TextStyle(fontSize: 11, color: Colors.black38),
+                ),
+              ),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFF43A047),
+                    inactiveTrackColor: Colors.grey.shade200,
+                    thumbColor: Colors.white,
+                    overlayColor: const Color(
+                      0xFF43A047,
+                    ).withValues(alpha: 0.15),
+                    thumbShape: const _RingThumbShape(),
+                    trackHeight: 6,
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 16,
+                    ),
+                  ),
                 child: Slider(
                   value: value.clamp(min, max).toDouble(),
                   min: min,
                   max: max,
+                  label: displayValue,
                   onChanged: onChanged,
                 ),
-              ),
-            ),
-            SizedBox(
-              width: 44,
-              child: Text(
-                maxLabel,
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 11, color: Colors.black38),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              constraints: const BoxConstraints(minWidth: 76),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Text(
-                displayValue,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
+              SizedBox(
+                width: 44,
+                child: Text(
+                  maxLabel,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(fontSize: 11, color: Colors.black38),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                constraints: const BoxConstraints(minWidth: 76),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Text(
+                  displayValue,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -341,24 +341,46 @@ class _AddVoucherCatalogScreenState extends State<AddVoucherCatalogScreen> {
               style: TextStyle(fontSize: 12, color: Colors.black54),
             );
           }
-          return DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedCampaignId,
-              isExpanded: true,
-              hint: const Text('Pilih campaign'),
-              items: state.campaigns
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c.id,
-                      child: Text(
-                        '${c.title} — tersedia ${_rupiah(c.availableAmount.round())}',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedCampaignId = v),
+          return DropdownButtonFormField<int>(
+            value: _selectedCampaignId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Campaign pendanaan',
+              hintText: 'Pilih campaign',
+              floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Color(0xFF1B8039),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
+            hint: const Text('Pilih campaign'),
+            items: state.campaigns
+                .map(
+                  (c) => DropdownMenuItem(
+                    value: c.id,
+                    child: Text(
+                      '${c.title} — tersedia ${_rupiah(c.availableAmount.round())}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => setState(() => _selectedCampaignId = v),
           );
         },
       ),
@@ -379,32 +401,54 @@ class _AddVoucherCatalogScreenState extends State<AddVoucherCatalogScreen> {
               style: TextStyle(fontSize: 12, color: Colors.black54),
             );
           }
-          return DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedMitraId,
-              isExpanded: true,
-              hint: const Text('Pilih mitra'),
-              items: verified
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e.id,
-                      child: Text(
-                        '${e.storeName} (${e.ownerName})',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                setState(() {
-                  _selectedMitraId = v;
-                  _selectedProductId = null;
-                });
-                context.read<AdminCampaignBloc>().add(
-                  AdminMitraProductsLoaded(mitraProfileId: v),
-                );
-              },
+          return DropdownButtonFormField<int>(
+            value: _selectedMitraId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Mitra UMKM',
+              hintText: 'Pilih mitra',
+              floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Color(0xFF1B8039),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
+            hint: const Text('Pilih mitra'),
+            items: verified
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e.id,
+                    child: Text(
+                      '${e.storeName} (${e.ownerName})',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              setState(() {
+                _selectedMitraId = v;
+                _selectedProductId = null;
+              });
+              context.read<AdminCampaignBloc>().add(
+                AdminMitraProductsLoaded(mitraProfileId: v),
+              );
+            },
           );
         },
       ),
@@ -438,24 +482,46 @@ class _AddVoucherCatalogScreenState extends State<AddVoucherCatalogScreen> {
               style: TextStyle(fontSize: 12, color: Colors.black54),
             );
           }
-          return DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedProductId,
-              isExpanded: true,
-              hint: const Text('Pilih produk'),
-              items: fundable
-                  .map(
-                    (p) => DropdownMenuItem(
-                      value: p.id,
-                      child: Text(
-                        '${p.title} — ${_rupiah(p.rupiahValue)} • ${_pointsFor(p.rupiahValue)} poin',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedProductId = v),
+          return DropdownButtonFormField<int>(
+            value: _selectedProductId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Produk mitra',
+              hintText: 'Pilih produk',
+              floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Color(0xFF1B8039),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
+            hint: const Text('Pilih produk'),
+            items: fundable
+                .map(
+                  (p) => DropdownMenuItem(
+                    value: p.id,
+                    child: Text(
+                      '${p.title} — ${_rupiah(p.rupiahValue)} • ${_pointsFor(p.rupiahValue)} poin',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => setState(() => _selectedProductId = v),
           );
         },
       ),
@@ -471,9 +537,29 @@ class _AddVoucherCatalogScreenState extends State<AddVoucherCatalogScreen> {
             TextField(
               controller: _stokController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
+                labelText: 'Jumlah stok',
                 hintText: '10',
-                border: InputBorder.none,
+                floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1B8039),
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
           ),

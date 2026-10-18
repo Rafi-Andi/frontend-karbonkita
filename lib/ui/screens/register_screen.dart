@@ -272,6 +272,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Name Field
                       _buildTextField(
+                        label: 'Nama lengkap',
                         hint: 'John Doe',
                         icon: Icons.person_outline,
                         controller: _nameController,
@@ -285,6 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Email Field
                       _buildTextField(
+                        label: 'Email',
                         hint: 'user@email.com',
                         icon: Icons.email_outlined,
                         controller: _emailController,
@@ -294,7 +296,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Password Field
                       _buildTextField(
-                        hint: '********',
+                        label: 'Kata sandi',
+                        hint: 'Min 8 karakter',
                         icon: Icons.lock_outline,
                         controller: _passwordController,
                         isPassword: true,
@@ -309,7 +312,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Confirm Password Field
                       _buildTextField(
-                        hint: 'Konfirmasi Kata Sandi',
+                        label: 'Konfirmasi kata sandi',
+                        hint: 'Ulangi kata sandi',
                         icon: Icons.lock_outline,
                         controller: _confirmPasswordController,
                         isPassword: true,
@@ -333,7 +337,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           Expanded(
                             child: _buildRtRwField(
-                              hint: 'RT (cth: 005)',
+                              label: 'RT',
+                              hint: 'cth: 005',
                               controller: _rtController,
                               maxLength: 3,
                             ),
@@ -341,7 +346,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildRtRwField(
-                              hint: 'RW (cth: 02)',
+                              label: 'RW',
+                              hint: 'cth: 02',
                               controller: _rwController,
                               maxLength: 2,
                             ),
@@ -486,6 +492,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildTextField({
+    required String label,
     required String hint,
     required IconData icon,
     required TextEditingController controller,
@@ -494,132 +501,124 @@ class _RegisterScreenState extends State<RegisterScreen> {
     VoidCallback? onTogglePassword,
     TextInputType? keyboardType,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    OutlineInputBorder buildBorder(Color color, {double width = 1}) {
+      return OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    obscureText
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: Colors.grey.shade600,
-                    size: 20,
-                  ),
-                  onPressed: onTogglePassword,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+        prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: Colors.grey.shade600,
+                  size: 20,
+                ),
+                onPressed: onTogglePassword,
+              )
+            : null,
+        filled: true,
+        fillColor: Colors.white,
+        border: buildBorder(Colors.grey.shade300),
+        enabledBorder: buildBorder(Colors.grey.shade300),
+        focusedBorder: buildBorder(const Color(0xFF1B8039), width: 1.5),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 12,
         ),
       ),
     );
   }
 
   Widget _buildPhoneField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    OutlineInputBorder buildBorder(Color color, {double width = 1}) {
+      return OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(
-              Icons.phone_outlined,
-              color: Colors.grey.shade600,
-              size: 20,
-            ),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                LengthLimitingTextInputFormatter(14),
-              ],
-              decoration: InputDecoration(
-                hintText: '812-3456-789',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-          Container(height: 24, width: 1, color: Colors.grey.shade300),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                // Flag placeholder (red rectangle for IND flag)
-                Container(
-                  width: 16,
-                  height: 10,
-                  color: Colors.red,
-                  alignment: Alignment.bottomCenter,
-                  child: Container(height: 5, color: Colors.white),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '+62',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Colors.grey.shade600,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ],
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return TextField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+        LengthLimitingTextInputFormatter(14),
+      ],
+      decoration: InputDecoration(
+        labelText: 'Nomor HP',
+        hintText: '812-3456-789',
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+        prefixIcon: Icon(
+          Icons.phone_outlined,
+          color: Colors.grey.shade600,
+          size: 20,
+        ),
+        prefixText: '+62 ',
+        prefixStyle: const TextStyle(fontWeight: FontWeight.w600),
+        filled: true,
+        fillColor: Colors.white,
+        border: buildBorder(Colors.grey.shade300),
+        enabledBorder: buildBorder(Colors.grey.shade300),
+        focusedBorder: buildBorder(const Color(0xFF1B8039), width: 1.5),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 12,
+        ),
       ),
     );
   }
 
   Widget _buildRtRwField({
+    required String label,
     required String hint,
     required TextEditingController controller,
     required int maxLength,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    OutlineInputBorder buildBorder(Color color, {double width = 1}) {
+      return OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(maxLength),
-        ],
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-          prefixIcon: Icon(Icons.people_outline, color: Colors.green, size: 16),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 14,
-            horizontal: 4,
-          ),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(maxLength),
+      ],
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+        floatingLabelStyle: const TextStyle(color: Color(0xFF1B8039)),
+        prefixIcon: const Icon(
+          Icons.people_outline,
+          color: Colors.green,
+          size: 16,
         ),
+        filled: true,
+        fillColor: Colors.white,
+        border: buildBorder(Colors.grey.shade300),
+        enabledBorder: buildBorder(Colors.grey.shade300),
+        focusedBorder: buildBorder(const Color(0xFF1B8039), width: 1.5),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
       ),
     );
   }

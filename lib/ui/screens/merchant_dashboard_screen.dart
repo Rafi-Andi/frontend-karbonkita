@@ -438,15 +438,20 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           else
-            Switch(
-              value: dashboard.isOpen,
-              onChanged: (v) =>
-                  context.read<MerchantBloc>().add(MerchantStatusToggled(v)),
-              activeThumbColor: Colors.white,
-              activeTrackColor: const Color(0xFF43A047),
-              inactiveThumbColor: Colors.white,
-              inactiveTrackColor: Colors.grey.shade300,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Semantics(
+              label: 'Status toko',
+              value: dashboard.isOpen ? 'Toko buka' : 'Toko tutup',
+              toggled: dashboard.isOpen,
+              child: Switch(
+                value: dashboard.isOpen,
+                onChanged: (v) =>
+                    context.read<MerchantBloc>().add(MerchantStatusToggled(v)),
+                activeThumbColor: Colors.white,
+                activeTrackColor: const Color(0xFF43A047),
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.grey.shade300,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
           const SizedBox(height: 4),
           Row(

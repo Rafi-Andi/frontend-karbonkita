@@ -707,6 +707,8 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
     int maxLines = 1,
     String? error,
   }) {
+    final hasError = error != null;
+    final errorColor = const Color(0xFFC62828);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -718,7 +720,10 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
           maxLines: maxLines,
           style: const TextStyle(fontSize: 13),
           decoration: InputDecoration(
-            hintText: hint,
+            labelText: hint,
+            floatingLabelStyle: TextStyle(
+              color: hasError ? errorColor : _green,
+            ),
             hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
             filled: true,
             fillColor: const Color(0xFFF4FAF5),
@@ -728,7 +733,27 @@ class _MitraRegisterScreenState extends State<MitraRegisterScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                color: hasError ? errorColor : Colors.grey.shade300,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: hasError ? errorColor : _green,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFC62828)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Color(0xFFC62828),
+                width: 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,

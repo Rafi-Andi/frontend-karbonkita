@@ -11,6 +11,17 @@ import 'mission_detail_screen.dart';
 class MisiScreen extends StatelessWidget {
   const MisiScreen({super.key});
 
+  /// Tarik-untuk-refresh: paksa muat ulang dari jaringan lalu tunggu sampai
+  /// status keluar dari loading agar indikator berhenti dengan wajar.
+  Future<void> _onRefresh(BuildContext context) async {
+    final bloc = context.read<MissionBloc>();
+    final done = bloc.stream.firstWhere(
+      (s) => s.status != MissionStatus.loading,
+    );
+    bloc.add(const MissionsLoaded(force: true));
+    await done;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Trigger initial load when screen is built (kuis hanya lewat FAB)
@@ -19,17 +30,22 @@ class MisiScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildCategoryTabs(),
-              const SizedBox(height: 20),
-              _buildMissionList(),
-            ],
+        child: RefreshIndicator(
+          color: const Color(0xFF1B8039),
+          onRefresh: () => _onRefresh(context),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildCategoryTabs(),
+                const SizedBox(height: 20),
+                _buildMissionList(),
+              ],
+            ),
           ),
         ),
       ),

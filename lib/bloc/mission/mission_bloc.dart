@@ -32,25 +32,29 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         state.missions.isNotEmpty) {
       return;
     }
-    try {
-      final cached = await _repository.getCachedActiveMissions();
-      if (cached.missions.isNotEmpty) {
-        final filtered = state.currentFilter != null
-            ? cached.missions
-                  .where((m) => m.category == state.currentFilter)
-                  .toList()
-            : cached.missions;
-        emit(
-          state.copyWith(
-            status: MissionStatus.loaded,
-            missions: cached.missions,
-            filteredMissions: filtered,
-            isOffline: true,
-            lastUpdated: cached.savedAt,
-          ),
-        );
-      }
-    } catch (_) {}
+    // force=true = refresh eksplisit (pull-to-refresh / setelah misi selesai):
+    // lewati cache agar indikator menunggu hasil jaringan, bukan cache lama.
+    if (!event.force) {
+      try {
+        final cached = await _repository.getCachedActiveMissions();
+        if (cached.missions.isNotEmpty) {
+          final filtered = state.currentFilter != null
+              ? cached.missions
+                    .where((m) => m.category == state.currentFilter)
+                    .toList()
+              : cached.missions;
+          emit(
+            state.copyWith(
+              status: MissionStatus.loaded,
+              missions: cached.missions,
+              filteredMissions: filtered,
+              isOffline: true,
+              lastUpdated: cached.savedAt,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
 
     if (state.missions.isEmpty) {
       emit(state.copyWith(status: MissionStatus.loading, errorMessage: null));

@@ -23,17 +23,13 @@ class FakeAdminRewardRepository extends AdminRewardRepository {
   }
 
   @override
-  Future<AdminReward> updateReward(
-    int id, {
-    int? stock,
-    String? expiredAt,
-  }) async {
+  Future<AdminReward> updateReward(int id, {required String expiredAt}) async {
     if (error != null) throw error!;
     final base = rewards.firstWhere((r) => r.id == id, orElse: () => _reward());
     return _reward(
       id: base.id,
-      stock: stock ?? base.stock,
-      expiredAt: expiredAt ?? base.expiredAt,
+      stock: base.stock,
+      expiredAt: expiredAt,
       isActive: base.isActive,
     );
   }
@@ -251,25 +247,59 @@ void main() {
       await b.close();
     });
 
-    test('422 saat ubah stok -> failure + submitErrors utuh', () async {
+    test(
+      'ubah tenggat sukses -> success + reload, stok tidak berubah',
+      () async {
+        final repo = FakeAdminRewardRepository(rewards: [_reward(id: 1)]);
+        final b = AdminRewardBloc(repo);
+        final expectation = expectLater(
+          b.stream,
+          emitsInOrder([
+            predicate<AdminRewardState>(
+              (s) => s.submitStatus == AdminRewardSubmitStatus.submitting,
+            ),
+            predicate<AdminRewardState>(
+              (s) =>
+                  s.submitStatus == AdminRewardSubmitStatus.success &&
+                  s.lastReward?.expiredAt == '2030-06-01' &&
+                  s.lastReward?.stock == 5,
+            ),
+            // Reload otomatis setelah sukses.
+            predicate<AdminRewardState>(
+              (s) => s.status == AdminRewardStatus.loading,
+            ),
+            predicate<AdminRewardState>(
+              (s) => s.status == AdminRewardStatus.loaded,
+            ),
+          ]),
+        );
+        b.add(const AdminRewardUpdateSubmitted(id: 1, expiredAt: '2030-06-01'));
+        await expectation;
+        await b.close();
+      },
+    );
+
+    test('422 saat ubah tenggat -> failure + submitErrors utuh', () async {
       final repo = FakeAdminRewardRepository(
         error: const VoucherException(
           'Validation failed.',
           errors: {
-            'stock': ['Stok maksimal 10000.'],
+            'expired_at': ['Tenggat harus berupa tanggal yang valid.'],
           },
           statusCode: 422,
         ),
       );
       final b = AdminRewardBloc(repo);
-      b.add(const AdminRewardUpdateSubmitted(id: 1, stock: 99999));
+      b.add(
+        const AdminRewardUpdateSubmitted(id: 1, expiredAt: 'bukan-tanggal'),
+      );
       await expectLater(
         b.stream,
         emitsThrough(
           predicate<AdminRewardState>(
             (s) =>
                 s.submitStatus == AdminRewardSubmitStatus.failure &&
-                s.submitErrors['stock']?.isNotEmpty == true,
+                s.submitErrors['expired_at']?.isNotEmpty == true,
           ),
         ),
       );

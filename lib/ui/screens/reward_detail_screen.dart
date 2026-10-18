@@ -7,7 +7,7 @@ import '../../bloc/admin_reward/admin_reward_state.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../models/admin_reward.dart';
 
-/// Detail satu reward: info lengkap, aksi ubah stok & tenggat,
+/// Detail satu reward: info lengkap, aksi ubah tenggat,
 /// aktif/nonaktif, dan daftar warga yang sudah menukarkan (paginasi
 /// "Muat lebih banyak").
 ///
@@ -242,8 +242,8 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => _openEditSheet(reward),
-            icon: const Icon(Icons.edit_note, size: 16),
-            label: const Text('Ubah Stok & Tenggat'),
+            icon: const Icon(Icons.event, size: 16),
+            label: const Text('Ubah Tenggat'),
           ),
         ),
         const SizedBox(width: 8),
@@ -268,7 +268,6 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
 
   Future<void> _openEditSheet(AdminReward reward) async {
     final bloc = context.read<AdminRewardBloc>();
-    final stockController = TextEditingController(text: '${reward.stock}');
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     var selectedDate = DateTime.tryParse(reward.expiredAt) ?? today;
@@ -279,16 +278,10 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        String? stockError;
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             return Container(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                20 + MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -301,7 +294,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                     children: [
                       const Expanded(
                         child: Text(
-                          'Ubah Stok & Tenggat',
+                          'Ubah Tenggat',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -316,19 +309,9 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Stok tersisa',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: stockController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: '0–10000',
-                      errorText: stockError,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
+                    'Stok tidak bisa diubah manual karena terikat alokasi '
+                    'dana campaign. Tambah stok lewat pendanaan voucher baru.',
+                    style: TextStyle(fontSize: 11, color: Colors.black54),
                   ),
                   const SizedBox(height: 14),
                   const Text(
@@ -383,17 +366,9 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        final stock = int.tryParse(stockController.text.trim());
-                        if (stock == null || stock < 0 || stock > 10000) {
-                          setSheetState(
-                            () => stockError = 'Stok harus angka 0–10000.',
-                          );
-                          return;
-                        }
                         bloc.add(
                           AdminRewardUpdateSubmitted(
                             id: reward.id,
-                            stock: stock,
                             expiredAt: _formatYmd(selectedDate),
                           ),
                         );
@@ -419,7 +394,6 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
         );
       },
     );
-    stockController.dispose();
   }
 
   Widget _claimsSection(AdminRewardState state) {

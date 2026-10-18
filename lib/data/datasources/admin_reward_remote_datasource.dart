@@ -21,16 +21,13 @@ class AdminRewardRemoteDatasource {
     throw const FormatException('Format daftar reward tidak dikenali.');
   }
 
-  /// PATCH /api/admin/vouchers/{id} — ubah stok & tenggat (partial).
-  Future<AdminReward> updateReward(
-    int id, {
-    int? stock,
-    String? expiredAt,
-  }) async {
-    final body = <String, dynamic>{};
-    if (stock != null) body['stock'] = stock;
-    if (expiredAt != null) body['expired_at'] = expiredAt;
-    final envelope = await _client.patch(ApiEndpoints.adminVoucher(id), body);
+  /// PATCH /api/admin/vouchers/{id} — ubah tenggat. Stok dikunci oleh
+  /// alokasi dana campaign saat pendanaan, jadi backend menolak payload
+  /// `stock` (422) — tambah stok hanya lewat pendanaan voucher baru.
+  Future<AdminReward> updateReward(int id, {required String expiredAt}) async {
+    final envelope = await _client.patch(ApiEndpoints.adminVoucher(id), {
+      'expired_at': expiredAt,
+    });
     final data = envelope['data'];
     if (data is Map<String, dynamic>) return AdminReward.fromJson(data);
     throw const FormatException('Format hasil reward tidak dikenali.');

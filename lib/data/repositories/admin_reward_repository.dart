@@ -5,9 +5,9 @@ import '../datasources/admin_reward_remote_datasource.dart';
 
 /// Orkestrasi data kelola reward untuk admin.
 ///
-/// Tanpa cache: layar kelola harus selalu fresh dari backend (stok, tenggat,
-/// dan daftar penukar cepat berubah). Error 422 membawa `errors` per-field
-/// agar form ubah stok/tenggat bisa menampilkan rincian.
+/// Tanpa cache: layar kelola harus selalu fresh dari backend (tenggat dan
+/// daftar penukar cepat berubah). Error 422 membawa `errors` per-field
+/// agar form ubah tenggat bisa menampilkan rincian.
 class AdminRewardRepository {
   AdminRewardRepository(this._remote);
 
@@ -16,10 +16,12 @@ class AdminRewardRepository {
   Future<List<AdminReward>> getRewards() =>
       _guard(() => _remote.fetchAdminRewards(), 'Gagal memuat daftar reward');
 
-  Future<AdminReward> updateReward(int id, {int? stock, String? expiredAt}) =>
+  /// Ubah tenggat saja — stok dikunci alokasi dana campaign (backend
+  /// menolak payload `stock` dengan 422).
+  Future<AdminReward> updateReward(int id, {required String expiredAt}) =>
       _guard(
-        () => _remote.updateReward(id, stock: stock, expiredAt: expiredAt),
-        'Gagal memperbarui reward',
+        () => _remote.updateReward(id, expiredAt: expiredAt),
+        'Gagal memperbarui tenggat reward',
       );
 
   Future<AdminReward> setRewardStatus(int id, bool isActive) => _guard(

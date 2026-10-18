@@ -13,7 +13,7 @@ import 'reward_detail_screen.dart';
 
 /// Kelola reward marketplace (role:admin): daftar semua reward termasuk
 /// nonaktif & kedaluwarsa, tenggat, jumlah penukar, aktif/nonaktif, dan
-/// jalan ke detail (penukar + ubah stok & tenggat).
+/// jalan ke detail (penukar + ubah tenggat — stok terkunci dana campaign).
 class RewardManageScreen extends StatefulWidget {
   const RewardManageScreen({super.key});
 

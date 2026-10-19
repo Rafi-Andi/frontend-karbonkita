@@ -33,17 +33,20 @@ class ValidationResultSheet extends StatelessWidget {
         20,
         MediaQuery.of(context).viewPadding.bottom + 20,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 14),
-          _buildInfoCards(),
-          const SizedBox(height: 12),
-          _buildAntiFraudBanner(),
-          const SizedBox(height: 14),
-          _buildCtaButton(),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 14),
+            _buildInfoCards(),
+            if (!_verified) _buildRejectionDetail(),
+            const SizedBox(height: 12),
+            _buildAntiFraudBanner(),
+            const SizedBox(height: 14),
+            _buildCtaButton(),
+          ],
+        ),
       ),
     );
   }
@@ -77,7 +80,7 @@ class ValidationResultSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Validasi AI Gemini',
+                'Validasi AI',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -96,7 +99,8 @@ class ValidationResultSheet extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 _verified
-                    ? 'Sampahmu sudah terverifikasi AI'
+                    ? (result.verificationNote ??
+                          'Sampahmu sudah terverifikasi AI')
                     : (result.rejectionReason ??
                           'Foto tidak sesuai misi. Coba foto lain.'),
                 style: const TextStyle(fontSize: 12, color: Color(0xFF8A938F)),
@@ -218,6 +222,73 @@ class ValidationResultSheet extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  /// Alasan detail penolakan dari backend: catatan AI + saran perbaikan.
+  /// Bila backend lama belum mengirim field ini, blok ini tidak ditampilkan.
+  Widget _buildRejectionDetail() {
+    final aiReason = result.aiReason?.trim();
+    final hint = result.hint?.trim();
+    final hasReason = aiReason != null && aiReason.isNotEmpty;
+    final hasHint = hint != null && hint.isNotEmpty;
+
+    if (!hasReason && !hasHint) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF6E5),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasReason) ...[
+              _rejectionLabel(Icons.smart_toy_outlined, 'Catatan AI'),
+              const SizedBox(height: 4),
+              Text(aiReason, style: _rejectionBodyStyle),
+            ],
+            if (hasReason && hasHint) const SizedBox(height: 10),
+            if (hasHint) ...[
+              _rejectionLabel(Icons.lightbulb_outline, 'Agar foto diterima'),
+              const SizedBox(height: 4),
+              Text(hint, style: _rejectionBodyStyle),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const TextStyle _rejectionBodyStyle = TextStyle(
+    fontSize: 12,
+    height: 1.4,
+    color: Color(0xFF6B4B00),
+  );
+
+  Widget _rejectionLabel(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFFB26A00)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFB26A00),
+            ),
+          ),
+        ),
       ],
     );
   }

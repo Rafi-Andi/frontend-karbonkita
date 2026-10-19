@@ -244,6 +244,19 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
     }
   }
 
+  /// Alasan siap-tampil (bahasa Indonesia) dari payload `data` backend.
+  /// Envelope `message` tetap Inggris sesuai kontrak API, jadi utamakan
+  /// `rejection_reason`/`ai_reason` agar dialog tidak menampilkan teks Inggris.
+  String? _backendReason(Map<String, dynamic>? data) {
+    for (final key in const ['rejection_reason', 'ai_reason']) {
+      final value = data?[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
   Future<void> _onWasteVerifyRequested(
     WasteVerifyRequested event,
     Emitter<MissionState> emit,
@@ -288,6 +301,9 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         );
       }
     } on MissionException catch (e) {
+      // Backend mengirim alasan bahasa Indonesia di `data` (409/503);
+      // envelope `message` tetap Inggris sesuai kontrak API.
+      final reason = _backendReason(e.data) ?? e.message;
       if (e.statusCode == 409) {
         // Backend bedakan via data: {already_completed_today: true}
         // = daily-cap, selain itu = foto duplikat (anti-fraud).
@@ -297,7 +313,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
             wasteVerifyStatus: alreadyCapped
                 ? WasteVerifyStatus.dailyCapped
                 : WasteVerifyStatus.duplicate,
-            wasteVerifyErrorMessage: e.message,
+            wasteVerifyErrorMessage: reason,
             wasteVerifyData: e.data,
           ),
         );
@@ -307,7 +323,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         emit(
           state.copyWith(
             wasteVerifyStatus: WasteVerifyStatus.pendingReview,
-            wasteVerifyErrorMessage: e.message,
+            wasteVerifyErrorMessage: reason,
             wasteVerifyData: e.data,
           ),
         );
@@ -316,7 +332,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
       emit(
         state.copyWith(
           wasteVerifyStatus: WasteVerifyStatus.failure,
-          wasteVerifyErrorMessage: e.message,
+          wasteVerifyErrorMessage: reason,
           wasteVerifyData: e.data,
         ),
       );

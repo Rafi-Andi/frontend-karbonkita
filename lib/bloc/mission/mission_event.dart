@@ -54,7 +54,7 @@ class QuizAnswerSubmitted extends MissionEvent {
   final String answer;
 }
 
-/// Upload foto sampah untuk validasi AI Gemini (backend).
+/// Upload foto sampah untuk validasi AI Vision (backend).
 class WasteVerifyRequested extends MissionEvent {
   const WasteVerifyRequested({
     required this.missionId,

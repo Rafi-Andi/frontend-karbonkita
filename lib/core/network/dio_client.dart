@@ -100,7 +100,7 @@ class DioClient {
   /// POST multipart untuk upload file (mis. verifikasi sampah).
   ///
   /// [fields] dikirim sebagai form fields, [filePath] sebagai single file
-  /// di [fileField]. Timeout 60 detik karena upload + antre AI Gemini
+  /// di [fileField]. Timeout 60 detik karena upload + antre AI Vision
   /// di backend bisa >20 detik.
   Future<Map<String, dynamic>> postMultipart(
     String path, {

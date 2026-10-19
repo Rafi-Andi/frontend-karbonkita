@@ -80,7 +80,7 @@ class ValidationResultSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Validasi AI',
+                'Validasi AI Vision',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,

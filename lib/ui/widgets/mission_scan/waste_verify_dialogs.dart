@@ -7,9 +7,14 @@ import 'package:flutter/material.dart';
 /// - 409 daily-cap → misi sudah verified hari ini.
 /// - 503 → AI down, foto masuk antrean pending.
 /// - lainnya (422/401/jaringan) → failure umum dengan retry.
+///
+/// `hint` = saran perbaikan dari backend (`data.hint`, bahasa Indonesia).
+/// Bila diisi, teksnya menggantikan saran bawaan aplikasi supaya user dapat
+/// arahan konkret sesuai penilaian AI.
 Future<void> showDuplicateWasteDialog(
   BuildContext context, {
   required String message,
+  String? hint,
   required VoidCallback onBackToMissions,
 }) {
   return _showWasteDialog(
@@ -19,7 +24,8 @@ Future<void> showDuplicateWasteDialog(
     iconBg: const Color(0xFFFEF3C7),
     title: 'Foto Sudah Pernah Dipakai',
     body: message,
-    hint:
+    hint: hint,
+    defaultHint:
         'Sistem anti-fraud menolak foto duplikat. '
         'Ambil foto baru yang berbeda untuk misi ini.',
     primaryLabel: 'Kembali ke Misi',
@@ -30,6 +36,7 @@ Future<void> showDuplicateWasteDialog(
 Future<void> showDailyCappedWasteDialog(
   BuildContext context, {
   required String message,
+  String? hint,
   required VoidCallback onBackToMissions,
 }) {
   return _showWasteDialog(
@@ -39,7 +46,8 @@ Future<void> showDailyCappedWasteDialog(
     iconBg: const Color(0xFFE9F6EC),
     title: 'Misi Hari Ini Selesai',
     body: message,
-    hint:
+    hint: hint,
+    defaultHint:
         'Setiap misi sampah hanya bisa diklaim 1x sehari. '
         'Kembali lagi besok untuk klaim lagi.',
     primaryLabel: 'Kembali ke Misi',
@@ -50,6 +58,7 @@ Future<void> showDailyCappedWasteDialog(
 Future<void> showPendingWasteDialog(
   BuildContext context, {
   required String message,
+  String? hint,
   required VoidCallback onRetry,
   required VoidCallback onBackToMissions,
 }) {
@@ -60,7 +69,8 @@ Future<void> showPendingWasteDialog(
     iconBg: const Color(0xFFE3F2FD),
     title: 'AI Sedang Sibuk',
     body: message,
-    hint:
+    hint: hint,
+    defaultHint:
         'Foto sudah tersimpan dan masuk antrean. '
         'Coba kirim ulang dalam beberapa saat.',
     primaryLabel: 'Coba Lagi',
@@ -73,6 +83,7 @@ Future<void> showPendingWasteDialog(
 Future<void> showWasteFailureDialog(
   BuildContext context, {
   required String message,
+  String? hint,
   required VoidCallback onRetry,
   required VoidCallback onBackToMissions,
 }) {
@@ -83,7 +94,8 @@ Future<void> showWasteFailureDialog(
     iconBg: const Color(0xFFFFEBEE),
     title: 'Verifikasi Gagal',
     body: message,
-    hint:
+    hint: hint,
+    defaultHint:
         'Periksa koneksi dan pastikan foto berekstensi JPG/PNG '
         'dengan ukuran maksimal 5MB.',
     primaryLabel: 'Coba Lagi',
@@ -100,12 +112,17 @@ Future<void> _showWasteDialog(
   required Color iconBg,
   required String title,
   required String body,
-  required String hint,
+  required String defaultHint,
+  String? hint,
   required String primaryLabel,
   required VoidCallback onPrimary,
   String? secondaryLabel,
   VoidCallback? onSecondary,
 }) {
+  final hintText = (hint != null && hint.trim().isNotEmpty)
+      ? hint.trim()
+      : defaultHint;
+
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -137,7 +154,7 @@ Future<void> _showWasteDialog(
           ),
           const SizedBox(height: 8),
           Text(
-            hint,
+            hintText,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Color(0xFF8A938F)),
           ),

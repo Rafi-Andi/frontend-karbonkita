@@ -46,7 +46,7 @@ String _compressImage(String originalPath) {
 ///
 /// Dibuka dari tab Misi via tombol "Upload Foto" kartu kategori Sampah.
 /// Foto hasil [takePicture] dikompres lokal lalu diupload ke
-/// `POST /api/missions/verify-waste` via [MissionBloc]; validasi Gemini
+/// `POST /api/missions/verify-waste` via [MissionBloc]; validasi AI Vision
 /// berjalan server-side.
 class MisiScanScreen extends StatefulWidget {
   const MisiScanScreen({
@@ -200,6 +200,14 @@ class _MisiScanScreenState extends State<MisiScanScreen> {
     if (mounted) Navigator.pop(context, result);
   }
 
+  /// Saran perbaikan dari backend (`data.hint`, bahasa Indonesia) yang dipakai
+  /// dialog penolakan supaya user dapat langkah konkret berikutnya.
+  String? _backendHint(Map<String, dynamic>? data) {
+    final value = data?['hint'];
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return null;
+  }
+
   void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -223,6 +231,7 @@ class _MisiScanScreenState extends State<MisiScanScreen> {
           message:
               state.wasteVerifyErrorMessage ??
               'Foto ini sudah pernah dipakai orang lain.',
+          hint: _backendHint(state.wasteVerifyData),
           onBackToMissions: () => _backToMissions(),
         );
       case WasteVerifyStatus.dailyCapped:
@@ -231,6 +240,7 @@ class _MisiScanScreenState extends State<MisiScanScreen> {
           message:
               state.wasteVerifyErrorMessage ??
               'Misi ini sudah diselesaikan hari ini.',
+          hint: _backendHint(state.wasteVerifyData),
           onBackToMissions: () => _backToMissions(),
         );
       case WasteVerifyStatus.pendingReview:
@@ -239,6 +249,7 @@ class _MisiScanScreenState extends State<MisiScanScreen> {
           message:
               state.wasteVerifyErrorMessage ??
               'AI sedang sibuk. Foto masuk antrean.',
+          hint: _backendHint(state.wasteVerifyData),
           onRetry: _retryUpload,
           onBackToMissions: () => _backToMissions(),
         );
@@ -248,6 +259,7 @@ class _MisiScanScreenState extends State<MisiScanScreen> {
           message:
               state.wasteVerifyErrorMessage ??
               'Terjadi kesalahan jaringan. Coba lagi.',
+          hint: _backendHint(state.wasteVerifyData),
           onRetry: _retryUpload,
           onBackToMissions: () => _backToMissions(),
         );

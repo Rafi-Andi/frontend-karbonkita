@@ -11,6 +11,7 @@ import 'package:karbon_kita_app/data/repositories/mission_repository.dart';
 import 'package:karbon_kita_app/models/mission.dart';
 import 'package:karbon_kita_app/models/verify_waste_result.dart';
 import 'package:karbon_kita_app/ui/widgets/mission_scan/validation_result_sheet.dart';
+import 'package:karbon_kita_app/ui/widgets/mission_scan/waste_verify_dialogs.dart';
 
 Map<String, dynamic> _verifiedData() => {
   'duplicate': false,
@@ -126,6 +127,13 @@ void main() {
       });
 
       expect(result.categoryLabel, 'Sampah Terpilah');
+    });
+
+    test("kategori 'unknown' (foto ditolak) -> 'Belum dikenali'", () {
+      final result = VerifyWasteResult.fromJson(_rejectedData());
+
+      expect(result.wasteCategory, 'unknown');
+      expect(result.categoryLabel, 'Belum dikenali');
     });
   });
 
@@ -287,6 +295,76 @@ void main() {
       await bloc.close();
     });
 
+    test('503: pesan dialog pakai alasan Indonesia dari data backend', () async {
+      final bloc = MissionBloc(
+        FakeWasteRepository(
+          error: const MissionException(
+            'AI validation temporarily unavailable. Please try again later.',
+            statusCode: 503,
+            data: {
+              'user_mission_id': 10,
+              'status': 'pending',
+              'rejection_reason':
+                  'Validasi AI sedang tidak tersedia, jadi foto ini belum bisa dinilai.',
+              'hint':
+                  'Tidak ada poin yang hilang. Coba unggah lagi beberapa saat lagi.',
+            },
+          ),
+        ),
+      );
+      final future = expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<MissionState>(
+            (s) =>
+                s.wasteVerifyStatus == WasteVerifyStatus.pendingReview &&
+                (s.wasteVerifyErrorMessage ?? '').contains('tidak tersedia'),
+          ),
+        ),
+      );
+      bloc.add(
+        const WasteVerifyRequested(missionId: 1, imagePath: '/tmp/foto.jpg'),
+      );
+      await future;
+      await bloc.close();
+    });
+
+    test('409 duplikat: pesan dialog pakai alasan Indonesia', () async {
+      final bloc = MissionBloc(
+        FakeWasteRepository(
+          error: const MissionException(
+            'Duplicate image.',
+            statusCode: 409,
+            data: {
+              'user_mission_id': 9,
+              'status': 'rejected',
+              'rejection_reason':
+                  'Foto ini sudah pernah dikirim sebelumnya. Setiap foto hanya boleh dipakai sekali.',
+              'hint':
+                  'Ambil foto baru dari kondisi saat ini - foto lama yang sama tidak bisa dipakai dua kali.',
+            },
+          ),
+        ),
+      );
+      final future = expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<MissionState>(
+            (s) =>
+                s.wasteVerifyStatus == WasteVerifyStatus.duplicate &&
+                (s.wasteVerifyErrorMessage ?? '').contains(
+                  'sudah pernah dikirim',
+                ),
+          ),
+        ),
+      );
+      bloc.add(
+        const WasteVerifyRequested(missionId: 1, imagePath: '/tmp/foto.jpg'),
+      );
+      await future;
+      await bloc.close();
+    });
+
     test('422 validasi -> status failure', () async {
       final bloc = MissionBloc(
         FakeWasteRepository(
@@ -362,6 +440,7 @@ void main() {
     testWidgets('ditolak: alasan + catatan AI + saran tampil', (tester) async {
       await pumpSheet(tester, VerifyWasteResult.fromJson(_rejectedData()));
 
+      expect(find.text('Validasi AI Vision'), findsOneWidget);
       expect(find.text('Ditolak AI'), findsOneWidget);
       expect(find.textContaining('kriteria misi'), findsOneWidget);
       expect(find.text('Catatan AI'), findsOneWidget);
@@ -398,6 +477,68 @@ void main() {
       );
       expect(find.text('Catatan AI'), findsNothing);
       expect(find.text('Agar foto diterima'), findsNothing);
+    });
+  });
+
+  group('Dialog penolakan memakai saran dari backend', () {
+    Future<void> pumpDialog(
+      WidgetTester tester,
+      Future<void> Function(BuildContext) open,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => open(context),
+                child: const Text('buka'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('buka'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('503: alasan + hint backend tampil, bukan pesan Inggris', (
+      tester,
+    ) async {
+      await pumpDialog(
+        tester,
+        (context) => showPendingWasteDialog(
+          context,
+          message:
+              'Validasi AI sedang tidak tersedia, jadi foto ini belum bisa dinilai.',
+          hint:
+              'Tidak ada poin yang hilang. Coba unggah lagi beberapa saat lagi.',
+          onRetry: () {},
+          onBackToMissions: () {},
+        ),
+      );
+
+      expect(find.text('AI Sedang Sibuk'), findsOneWidget);
+      expect(find.textContaining('sedang tidak tersedia'), findsOneWidget);
+      expect(find.textContaining('Tidak ada poin yang hilang'), findsOneWidget);
+      expect(find.textContaining('temporarily unavailable'), findsNothing);
+    });
+
+    testWidgets('tanpa hint backend: saran bawaan tetap tampil', (
+      tester,
+    ) async {
+      await pumpDialog(
+        tester,
+        (context) => showDuplicateWasteDialog(
+          context,
+          message: 'Foto ini sudah pernah dikirim sebelumnya.',
+          onBackToMissions: () {},
+        ),
+      );
+
+      expect(
+        find.textContaining('Sistem anti-fraud menolak foto duplikat'),
+        findsOneWidget,
+      );
     });
   });
 }

@@ -84,6 +84,10 @@ class VerifyWasteResult {
         return 'Campuran Terpilah';
       case 'residue':
         return 'Residu Terpilah';
+      // 'unknown' = AI tidak mengenali objeknya (umumnya saat foto ditolak).
+      // Jangan labeli "Terpilah" supaya tidak menyesatkan saat penolakan.
+      case 'unknown':
+        return 'Belum dikenali';
       default:
         return 'Sampah Terpilah';
     }

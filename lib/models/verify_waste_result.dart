@@ -3,8 +3,9 @@
 /// Backend mengembalikan envelope `{success, message, data}` dengan `data`:
 /// 201 verified → user_mission_id, status, is_valid, confidence,
 ///   waste_category, xp_earned, points_earned, new_xp, new_level,
-///   new_eco_points, streak_days
-/// 200 rejected AI → field sama + rejection_reason, xp/points 0
+///   new_eco_points, streak_days, verification_note
+/// 200 rejected AI → field sama + rejection_reason, ai_reason, hint, xp/points 0
+/// 409 duplikat / 503 AI tidak tersedia → rejection_reason + hint
 class VerifyWasteResult {
   const VerifyWasteResult({
     required this.userMissionId,
@@ -15,6 +16,9 @@ class VerifyWasteResult {
     required this.xpEarned,
     required this.pointsEarned,
     this.rejectionReason,
+    this.aiReason,
+    this.hint,
+    this.verificationNote,
     this.newXp,
     this.newLevel,
     this.newEcoPoints,
@@ -29,6 +33,15 @@ class VerifyWasteResult {
   final int xpEarned;
   final int pointsEarned;
   final String? rejectionReason;
+
+  /// Penjelasan asli dari model AI (Bahasa Indonesia) kenapa foto ditolak.
+  final String? aiReason;
+
+  /// Saran konkret agar foto berikutnya diterima.
+  final String? hint;
+
+  /// Penjelasan singkat kenapa foto diterima (saat status verified).
+  final String? verificationNote;
   final int? newXp;
   final String? newLevel;
   final int? newEcoPoints;
@@ -46,6 +59,9 @@ class VerifyWasteResult {
       xpEarned: (json['xp_earned'] as num? ?? 0).toInt(),
       pointsEarned: (json['points_earned'] as num? ?? 0).toInt(),
       rejectionReason: json['rejection_reason'] as String?,
+      aiReason: json['ai_reason'] as String?,
+      hint: json['hint'] as String?,
+      verificationNote: json['verification_note'] as String?,
       newXp: (json['new_xp'] as num?)?.toInt(),
       newLevel: json['new_level'] as String?,
       newEcoPoints: (json['new_eco_points'] as num?)?.toInt(),

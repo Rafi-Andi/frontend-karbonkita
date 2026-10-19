@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karbon_kita_app/bloc/mission/mission_bloc.dart';
 import 'package:karbon_kita_app/bloc/mission/mission_event.dart';
@@ -9,6 +10,7 @@ import 'package:karbon_kita_app/data/datasources/mission_remote_datasource.dart'
 import 'package:karbon_kita_app/data/repositories/mission_repository.dart';
 import 'package:karbon_kita_app/models/mission.dart';
 import 'package:karbon_kita_app/models/verify_waste_result.dart';
+import 'package:karbon_kita_app/ui/widgets/mission_scan/validation_result_sheet.dart';
 
 Map<String, dynamic> _verifiedData() => {
   'duplicate': false,
@@ -23,6 +25,8 @@ Map<String, dynamic> _verifiedData() => {
   'new_level': 'Hijau Muda',
   'new_eco_points': 250,
   'streak_days': 3,
+  'verification_note':
+      'AI mengenali foto ini sebagai plastik dengan keyakinan 92%.',
 };
 
 Map<String, dynamic> _rejectedData() => {
@@ -31,7 +35,9 @@ Map<String, dynamic> _rejectedData() => {
   'is_valid': false,
   'confidence': 40.0,
   'waste_category': 'unknown',
-  'rejection_reason': 'Foto tidak menunjukkan sampah terpilah.',
+  'rejection_reason': 'AI menilai foto ini belum memenuhi kriteria misi.',
+  'ai_reason': 'Foto terlalu gelap sehingga sampah tidak terlihat jelas.',
+  'hint': 'Foto ulang dari jarak dekat dengan pencahayaan cukup.',
   'xp_earned': 0,
   'points_earned': 0,
 };
@@ -98,6 +104,7 @@ void main() {
       expect(result.pointsEarned, 100);
       expect(result.newLevel, 'Hijau Muda');
       expect(result.streakDays, 3);
+      expect(result.verificationNote, contains('keyakinan 92%'));
     });
 
     test('fromJson baca 200 rejected + rejection_reason', () {
@@ -107,7 +114,9 @@ void main() {
       expect(result.status, 'rejected');
       expect(result.xpEarned, 0);
       expect(result.pointsEarned, 0);
-      expect(result.rejectionReason, contains('terpilah'));
+      expect(result.rejectionReason, contains('kriteria misi'));
+      expect(result.aiReason, contains('terlalu gelap'));
+      expect(result.hint, contains('pencahayaan'));
     });
 
     test('kategori tak dikenal -> label generik', () {
@@ -332,6 +341,63 @@ void main() {
       bloc.add(const WasteVerifyReset());
       await reset;
       await bloc.close();
+    });
+  });
+
+  group('ValidationResultSheet menampilkan alasan', () {
+    Future<void> pumpSheet(
+      WidgetTester tester,
+      VerifyWasteResult result,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ValidationResultSheet(result: result, onContinue: () {}),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('ditolak: alasan + catatan AI + saran tampil', (tester) async {
+      await pumpSheet(tester, VerifyWasteResult.fromJson(_rejectedData()));
+
+      expect(find.text('Ditolak AI'), findsOneWidget);
+      expect(find.textContaining('kriteria misi'), findsOneWidget);
+      expect(find.text('Catatan AI'), findsOneWidget);
+      expect(find.textContaining('terlalu gelap'), findsOneWidget);
+      expect(find.text('Agar foto diterima'), findsOneWidget);
+      expect(find.textContaining('pencahayaan'), findsOneWidget);
+    });
+
+    testWidgets('diterima: verification_note tampil', (tester) async {
+      await pumpSheet(tester, VerifyWasteResult.fromJson(_verifiedData()));
+
+      expect(find.text('Sukses!'), findsOneWidget);
+      expect(find.textContaining('keyakinan 92%'), findsOneWidget);
+      expect(find.text('Catatan AI'), findsNothing);
+    });
+
+    testWidgets('backend lama tanpa field alasan tetap aman', (tester) async {
+      final result = VerifyWasteResult.fromJson({
+        'user_mission_id': 11,
+        'status': 'rejected',
+        'is_valid': false,
+        'confidence': 20.0,
+        'waste_category': 'unknown',
+        'xp_earned': 0,
+        'points_earned': 0,
+      });
+
+      await pumpSheet(tester, result);
+
+      expect(find.text('Ditolak AI'), findsOneWidget);
+      expect(
+        find.text('Foto tidak sesuai misi. Coba foto lain.'),
+        findsOneWidget,
+      );
+      expect(find.text('Catatan AI'), findsNothing);
+      expect(find.text('Agar foto diterima'), findsNothing);
     });
   });
 }
